@@ -1,10 +1,11 @@
-import { CalendarDays, GripVertical, User } from "lucide-react";
+import { CalendarDays, GripVertical } from "lucide-react";
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 
+import { AvatarGroup } from "@/components/team/AvatarGroup";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/cn";
 import { getDueDateMeta } from "@/lib/dates";
-import { PRIORITY_LABELS, getInitials } from "@/lib/utils";
+import { PRIORITY_LABELS } from "@/lib/utils";
 import type { Task } from "@/types/task";
 
 interface TaskCardProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -100,24 +101,7 @@ export const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function Ta
           )}
         </div>
 
-        {task.assignees.length > 0 ? (
-          <div className="flex shrink-0 -space-x-2">
-            {task.assignees.slice(0, 3).map((assignee) => (
-              <div
-                className="flex size-7 items-center justify-center rounded-full border-2 border-white text-[10px] font-semibold text-white shadow-card sm:size-8 sm:text-[11px]"
-                key={assignee.id}
-                style={{ backgroundColor: assignee.avatar_color }}
-                title={assignee.name}
-              >
-                {getInitials(assignee.name)}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-full border border-dashed border-line bg-slate-50 text-ink-soft sm:size-8">
-            <User className="size-3.5" />
-          </div>
-        )}
+        <AvatarGroup members={task.assignees} size="sm" />
       </div>
     </button>
   );

@@ -18,12 +18,17 @@ export type AssigneeFilter = string | "all";
 export type TaskRecord = Database["public"]["Tables"]["tasks"]["Row"];
 export type TaskDraft = Database["public"]["Tables"]["tasks"]["Insert"];
 export type TaskUpdate = Database["public"]["Tables"]["tasks"]["Update"];
+export type TaskAssigneeRecord =
+  Database["public"]["Tables"]["task_assignees"]["Row"];
+export type TaskAssigneeDraft =
+  Database["public"]["Tables"]["task_assignees"]["Insert"];
 
 export interface Task extends TaskRecord {
   assignees: TeamMember[];
 }
 
 export interface TaskFormValues {
+  assigneeIds: string[];
   description: string;
   dueDate: string;
   priority: TaskPriority;
@@ -37,6 +42,10 @@ export interface TaskMutationInput {
   priority: TaskPriority;
   status: TaskStatus;
   title: string;
+}
+
+export interface TaskMutationRequest extends TaskMutationInput {
+  assigneeIds: string[];
 }
 
 export interface BoardFilters {

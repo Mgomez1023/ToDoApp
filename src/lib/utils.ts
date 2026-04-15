@@ -5,6 +5,7 @@ import type {
   TaskPriority,
   TaskStatus,
 } from "@/types/task";
+import { TEAM_MEMBER_COLOR_OPTIONS } from "@/types/team";
 
 export const BOARD_COLUMNS: Array<{
   description: string;
@@ -70,6 +71,18 @@ export function getInitials(name: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+export function getGuestCode(userId: string) {
+  return userId.slice(0, 8).toUpperCase();
+}
+
+export function getGuestAvatarColor(userId: string) {
+  const colorIndex =
+    [...userId].reduce((total, character) => total + character.charCodeAt(0), 0) %
+    TEAM_MEMBER_COLOR_OPTIONS.length;
+
+  return TEAM_MEMBER_COLOR_OPTIONS[colorIndex];
 }
 
 export function matchesAssignee(task: Task, assigneeId: AssigneeFilter) {

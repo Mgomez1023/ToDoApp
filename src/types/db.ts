@@ -15,7 +15,17 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      find_workspace_profile: {
+        Args: {
+          lookup_guest_code: string;
+        };
+        Returns: {
+          avatar_color: string;
+          created_at: string;
+          guest_code: string;
+          user_id: string;
+        }[];
+      };
     };
     Tables: {
       task_assignees: {
@@ -97,10 +107,18 @@ export interface Database {
           avatar_color: string;
           created_at?: string;
           id?: string;
+          linked_user_id?: string | null;
           name: string;
           user_id: string;
         };
         Relationships: [
+          {
+            columns: ["linked_user_id"];
+            foreignKeyName: "team_members_linked_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "users";
+          },
           {
             columns: ["user_id"];
             foreignKeyName: "team_members_user_id_fkey";
@@ -113,6 +131,7 @@ export interface Database {
           avatar_color: string;
           created_at: string;
           id: string;
+          linked_user_id: string | null;
           name: string;
           user_id: string;
         };
@@ -120,7 +139,37 @@ export interface Database {
           avatar_color?: string;
           created_at?: string;
           id?: string;
+          linked_user_id?: string | null;
           name?: string;
+          user_id?: string;
+        };
+      };
+      workspace_profiles: {
+        Insert: {
+          avatar_color: string;
+          created_at?: string;
+          guest_code: string;
+          user_id: string;
+        };
+        Relationships: [
+          {
+            columns: ["user_id"];
+            foreignKeyName: "workspace_profiles_user_id_fkey";
+            isOneToOne: true;
+            referencedColumns: ["id"];
+            referencedRelation: "users";
+          },
+        ];
+        Row: {
+          avatar_color: string;
+          created_at: string;
+          guest_code: string;
+          user_id: string;
+        };
+        Update: {
+          avatar_color?: string;
+          created_at?: string;
+          guest_code?: string;
           user_id?: string;
         };
       };

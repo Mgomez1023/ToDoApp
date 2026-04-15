@@ -1,14 +1,20 @@
 import { useEffect, useState, type FormEvent } from "react";
 
+import { AvatarGroup } from "@/components/team/AvatarGroup";
+import { AssigneePicker } from "@/components/team/AssigneePicker";
 import { Button } from "@/components/ui/Button";
 import { TASK_PRIORITIES, TASK_STATUSES, type Task, type TaskFormValues } from "@/types/task";
+import type { TeamMember } from "@/types/team";
 
 interface TaskFormProps {
+  canManageAssignees: boolean;
   error: string | null;
   isDeleting: boolean;
   isSaving: boolean;
+  members: TeamMember[];
   mode: "create" | "edit";
   onDelete?: () => Promise<void>;
+  onManageTeam: () => void;
   onSubmit: (values: TaskFormValues) => Promise<void>;
   task: Task | null;
 }
@@ -18,6 +24,7 @@ const inputClassName =
 
 function getInitialValues(task: Task | null): TaskFormValues {
   return {
+    assigneeIds: task?.assignees.map((assignee) => assignee.id) ?? [],
     description: task?.description ?? "",
     dueDate: task?.due_date ?? "",
     priority: task?.priority ?? "normal",
@@ -27,11 +34,14 @@ function getInitialValues(task: Task | null): TaskFormValues {
 }
 
 export function TaskForm({
+  canManageAssignees,
   error,
   isDeleting,
   isSaving,
+  members,
   mode,
   onDelete,
+  onManageTeam,
   onSubmit,
   task,
 }: TaskFormProps) {
@@ -203,6 +213,33 @@ export function TaskForm({
       ) : (
         <div className="rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-3 text-sm leading-6 text-ink-muted">
           New tasks start in the To Do column. You can update status once the task is on the board.
+        </div>
+      )}
+
+      {canManageAssignees ? (
+        <AssigneePicker
+          disabled={isBusy}
+          members={members}
+          onChange={(assigneeIds) =>
+            setValues((currentValues) => ({
+              ...currentValues,
+              assigneeIds,
+            }))
+          }
+          onManageTeam={onManageTeam}
+          value={values.assigneeIds}
+        />
+      ) : (
+        <div className="space-y-3 rounded-2xl border border-line/80 bg-slate-50/85 px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-ink">Assignees</p>
+              <p className="mt-1 text-xs leading-5 text-ink-muted">
+                This task is shared onto your board from another workspace.
+              </p>
+            </div>
+            <AvatarGroup members={task?.assignees ?? []} size="md" />
+          </div>
         </div>
       )}
 

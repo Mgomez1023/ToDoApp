@@ -2,14 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Board } from "@/components/board/Board";
 import { WorkspaceRail } from "@/components/layout/WorkspaceRail";
+import { TeamMembersModal } from "@/components/team/TeamMembersModal";
 import { TaskModal } from "@/components/tasks/TaskModal";
 import { useGuestSession } from "@/hooks/useGuestSession";
 import { useTasks } from "@/hooks/useTasks";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
+import { getGuestCode } from "@/lib/utils";
 import type {
   AssigneeFilter,
   TaskFormValues,
-  TaskMutationInput,
+  TaskMutationRequest,
   TaskPriorityFilter,
 } from "@/types/task";
 
@@ -18,8 +20,9 @@ type TaskModalState =
   | { mode: "create"; open: true }
   | { mode: "edit"; open: true; taskId: string };
 
-function toTaskMutationInput(values: TaskFormValues): TaskMutationInput {
+function toTaskMutationInput(values: TaskFormValues): TaskMutationRequest {
   return {
+    assigneeIds: values.assigneeIds,
     description: values.description.trim() || null,
     due_date: values.dueDate || null,
     priority: values.priority,
@@ -36,6 +39,7 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [priority, setPriority] = useState<TaskPriorityFilter>("all");
   const [assigneeId, setAssigneeId] = useState<AssigneeFilter>("all");
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [taskModalState, setTaskModalState] = useState<TaskModalState>({
     mode: "create",
     open: false,
@@ -58,9 +62,19 @@ export function App() {
     }
   }, [selectedTask, taskModalState]);
 
+  useEffect(() => {
+    if (
+      assigneeId !== "all" &&
+      teamMembers.members.every((member) => member.id !== assigneeId)
+    ) {
+      setAssigneeId("all");
+    }
+  }, [assigneeId, teamMembers.members]);
+
   const handleRetry = () => {
     guestSession.retry();
     void tasks.refetch();
+    void teamMembers.refetch();
   };
 
   const handleCreateTask = async (values: TaskFormValues) => {
@@ -101,6 +115,22 @@ export function App() {
     });
   };
 
+  const handleCreateMember = async (input: {
+    avatar_color: string;
+    name: string;
+  }) => {
+    await teamMembers.createMember(input);
+  };
+
+  const handleDeleteMember = async (memberId: string) => {
+    await teamMembers.deleteMember(memberId);
+    void tasks.refetch();
+  };
+
+  const handleLinkGuestMember = async (guestCode: string) => {
+    await teamMembers.linkGuestMember(guestCode);
+  };
+
   const handleResetFilters = () => {
     setSearchQuery("");
     setPriority("all");
@@ -136,6 +166,10 @@ export function App() {
                 });
               }}
               onDismissMutationError={tasks.clearMutationError}
+              onManageTeam={() => {
+                teamMembers.clearMutationError();
+                setIsTeamModalOpen(true);
+              }}
               onPriorityChange={setPriority}
               onResetFilters={handleResetFilters}
               onRetry={handleRetry}
@@ -152,6 +186,7 @@ export function App() {
               sessionError={guestSession.error}
               tasks={tasks.tasks}
               taskError={tasks.error}
+              teamCount={teamMembers.ownedMembers.length}
             />
           </main>
         </div>
@@ -161,6 +196,11 @@ export function App() {
         error={tasks.mutationError}
         isDeleting={tasks.isDeleting}
         isSaving={tasks.isCreating || tasks.isUpdating}
+        canManageAssignees={
+          taskModalState.mode !== "edit" ||
+          selectedTask?.user_id === guestSession.user?.id
+        }
+        members={teamMembers.ownedMembers}
         mode={taskModalState.mode === "edit" ? "edit" : "create"}
         onClose={() => {
           tasks.clearMutationError();
@@ -169,12 +209,39 @@ export function App() {
             open: false,
           });
         }}
-        onDelete={taskModalState.mode === "edit" ? handleDeleteTask : undefined}
+        onDelete={
+          taskModalState.mode === "edit" &&
+          selectedTask?.user_id === guestSession.user?.id
+            ? handleDeleteTask
+            : undefined
+        }
+        onManageTeam={() => {
+          teamMembers.clearMutationError();
+          setIsTeamModalOpen(true);
+        }}
         onSubmit={
           taskModalState.mode === "edit" ? handleUpdateTask : handleCreateTask
         }
         open={taskModalState.open}
         task={selectedTask}
+      />
+
+      <TeamMembersModal
+        deletingMemberId={teamMembers.deletingMemberId}
+        guestCode={guestSession.user?.id ? getGuestCode(guestSession.user.id) : null}
+        error={teamMembers.mutationError ?? teamMembers.error}
+        isLinking={teamMembers.isLinking}
+        isLoading={teamMembers.isLoading}
+        isSaving={teamMembers.isCreating}
+        members={teamMembers.ownedMembers}
+        onClose={() => {
+          teamMembers.clearMutationError();
+          setIsTeamModalOpen(false);
+        }}
+        onCreateMember={handleCreateMember}
+        onDeleteMember={handleDeleteMember}
+        onLinkGuestMember={handleLinkGuestMember}
+        open={isTeamModalOpen}
       />
     </>
   );

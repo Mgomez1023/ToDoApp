@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Plus,
   SearchX,
+  Users,
   X,
 } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -48,6 +49,7 @@ interface BoardProps {
   onAssigneeChange: (value: string | "all") => void;
   onCreateTask: () => void;
   onDismissMutationError: () => void;
+  onManageTeam: () => void;
   onPriorityChange: (value: TaskPriorityFilter) => void;
   onResetFilters: () => void;
   onRetry: () => void;
@@ -56,6 +58,7 @@ interface BoardProps {
   onTaskSelect: (taskId: string) => void;
   sessionError: string | null;
   taskError: string | null;
+  teamCount: number;
   tasks: Task[];
 }
 
@@ -68,6 +71,7 @@ export function Board({
   onAssigneeChange,
   onCreateTask,
   onDismissMutationError,
+  onManageTeam,
   onPriorityChange,
   onResetFilters,
   onRetry,
@@ -76,6 +80,7 @@ export function Board({
   onTaskSelect,
   sessionError,
   taskError,
+  teamCount,
   tasks,
 }: BoardProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -175,7 +180,17 @@ export function Board({
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-
+              <Button
+                className="w-full sm:w-auto"
+                onClick={onManageTeam}
+                size="sm"
+                type="button"
+                variant="secondary"
+              >
+                <Users className="size-4" />
+                Team
+                {teamCount > 0 ? ` (${teamCount})` : ""}
+              </Button>
               <Button
                 className="w-full sm:w-auto"
                 onClick={onCreateTask}

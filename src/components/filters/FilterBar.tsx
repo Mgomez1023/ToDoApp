@@ -56,7 +56,7 @@ export function FilterBar({
         value={assigneeId}
       >
         <option value="all">
-          {assigneeSelectDisabled ? "Assignees in Phase 6" : "All assignees"}
+          {assigneeSelectDisabled ? "No team members yet" : "All assignees"}
         </option>
         {members.map((member) => (
           <option key={member.id} value={member.id}>
