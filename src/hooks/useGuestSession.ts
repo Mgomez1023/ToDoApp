@@ -32,6 +32,7 @@ export function useGuestSession() {
     }
 
     let isMounted = true;
+    let isBootstrapping = true;
 
     const bootstrapGuestSession = async () => {
       setState((currentState) => ({
@@ -50,7 +51,7 @@ export function useGuestSession() {
           throw sessionError;
         }
 
-        if (existingSession) {
+        if (existingSession?.user) {
           if (!isMounted) {
             return;
           }
@@ -72,6 +73,12 @@ export function useGuestSession() {
 
         if (signInError) {
           throw signInError;
+        }
+
+        if (!anonymousSession?.user) {
+          throw new Error(
+            "Guest authentication completed without a valid user session.",
+          );
         }
 
         if (!isMounted) {
@@ -98,6 +105,8 @@ export function useGuestSession() {
           session: null,
           user: null,
         });
+      } finally {
+        isBootstrapping = false;
       }
     };
 
@@ -110,12 +119,16 @@ export function useGuestSession() {
         return;
       }
 
-      setState({
-        error: null,
+      if (isBootstrapping && !session?.user) {
+        return;
+      }
+
+      setState((currentState) => ({
+        error: session?.user ? null : currentState.error,
         isLoading: false,
         session,
         user: session?.user ?? null,
-      });
+      }));
     });
 
     return () => {

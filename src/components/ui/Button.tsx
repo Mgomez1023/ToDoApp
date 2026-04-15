@@ -4,7 +4,7 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 rounded-xl text-[13px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:pointer-events-none disabled:opacity-50",
   {
     defaultVariants: {
       size: "md",
@@ -12,13 +12,13 @@ const buttonVariants = cva(
     },
     variants: {
       size: {
-        sm: "h-10 px-3.5",
-        md: "h-11 px-4.5",
-        lg: "h-12 px-5",
+        sm: "h-9 px-3.5",
+        md: "h-10 px-4",
+        lg: "h-11 px-4.5",
       },
       variant: {
         primary:
-          "bg-ink text-white shadow-card hover:-translate-y-0.5 hover:bg-slate-800",
+          "bg-ink text-white shadow-card hover:-translate-y-0.5 hover:bg-slate-900",
         secondary:
           "border border-line bg-white/80 text-ink shadow-card hover:-translate-y-0.5 hover:bg-white",
         ghost: "text-ink-muted hover:bg-white/70 hover:text-ink",

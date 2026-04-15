@@ -25,14 +25,14 @@ export const BOARD_COLUMNS: Array<{
     title: "In Progress",
     description: "Moving now",
     emptyTitle: "Nothing in motion",
-    emptyDescription: "Drag active work here once execution starts.",
+    emptyDescription: "Move active work here once execution starts.",
   },
   {
     status: "in_review",
     title: "In Review",
     description: "Awaiting eyes",
     emptyTitle: "Nothing in review yet",
-    emptyDescription: "Pull tasks here when they are ready for a final pass.",
+    emptyDescription: "Move tasks here when they are ready for a final pass.",
   },
   {
     status: "done",
@@ -58,6 +58,10 @@ export const PRIORITY_LABELS: Record<TaskPriority, string> = {
   normal: "Normal",
   high: "High",
 };
+
+export function isTaskStatus(value: string | null | undefined): value is TaskStatus {
+  return BOARD_COLUMNS.some((column) => column.status === value);
+}
 
 export function getInitials(name: string) {
   return name

@@ -1,8 +1,10 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
 interface EmptyStateProps {
+  children?: ReactNode;
   className?: string;
   description: string;
   icon: LucideIcon;
@@ -10,6 +12,7 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({
+  children,
   className,
   description,
   icon: Icon,
@@ -18,17 +21,18 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex min-h-44 flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-line/80 bg-white/55 px-6 py-8 text-center",
+        "flex min-h-32 flex-col items-center justify-center rounded-[1.25rem] border border-dashed border-line/80 bg-white/60 px-4 py-5 text-center sm:min-h-36 sm:px-5 sm:py-6",
         className,
       )}
     >
-      <div className="mb-4 rounded-2xl border border-white/80 bg-white/90 p-3 text-ink shadow-card">
-        <Icon className="size-5" />
+      <div className="mb-2.5 rounded-xl border border-white/80 bg-white/90 p-2 text-ink shadow-card">
+        <Icon className="size-[18px]" />
       </div>
       <h3 className="text-sm font-semibold text-ink">{title}</h3>
-      <p className="mt-2 max-w-[24ch] text-sm leading-6 text-ink-muted">
+      <p className="mt-1.5 max-w-[28ch] text-sm leading-5 text-ink-muted">
         {description}
       </p>
+      {children ? <div className="mt-4">{children}</div> : null}
     </div>
   );
 }

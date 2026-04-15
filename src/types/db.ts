@@ -8,13 +8,38 @@ export type Json =
 
 export interface Database {
   public: {
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
     Tables: {
       task_assignees: {
-        Row: {
+        Insert: {
           task_id: string;
           team_member_id: string;
         };
-        Insert: {
+        Relationships: [
+          {
+            columns: ["task_id"];
+            foreignKeyName: "task_assignees_task_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "tasks";
+          },
+          {
+            columns: ["team_member_id"];
+            foreignKeyName: "task_assignees_team_member_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "team_members";
+          },
+        ];
+        Row: {
           task_id: string;
           team_member_id: string;
         };
@@ -24,17 +49,6 @@ export interface Database {
         };
       };
       tasks: {
-        Row: {
-          created_at: string;
-          description: string | null;
-          due_date: string | null;
-          id: string;
-          priority: "low" | "normal" | "high";
-          status: "todo" | "in_progress" | "in_review" | "done";
-          title: string;
-          updated_at: string;
-          user_id: string;
-        };
         Insert: {
           created_at?: string;
           description?: string | null;
@@ -44,6 +58,26 @@ export interface Database {
           status?: "todo" | "in_progress" | "in_review" | "done";
           title: string;
           updated_at?: string;
+          user_id: string;
+        };
+        Relationships: [
+          {
+            columns: ["user_id"];
+            foreignKeyName: "tasks_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "users";
+          },
+        ];
+        Row: {
+          created_at: string;
+          description: string | null;
+          due_date: string | null;
+          id: string;
+          priority: "low" | "normal" | "high";
+          status: "todo" | "in_progress" | "in_review" | "done";
+          title: string;
+          updated_at: string;
           user_id: string;
         };
         Update: {
@@ -59,17 +93,26 @@ export interface Database {
         };
       };
       team_members: {
-        Row: {
-          avatar_color: string;
-          created_at: string;
-          id: string;
-          name: string;
-          user_id: string;
-        };
         Insert: {
           avatar_color: string;
           created_at?: string;
           id?: string;
+          name: string;
+          user_id: string;
+        };
+        Relationships: [
+          {
+            columns: ["user_id"];
+            foreignKeyName: "team_members_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "users";
+          },
+        ];
+        Row: {
+          avatar_color: string;
+          created_at: string;
+          id: string;
           name: string;
           user_id: string;
         };
@@ -81,6 +124,9 @@ export interface Database {
           user_id?: string;
         };
       };
+    };
+    Views: {
+      [_ in never]: never;
     };
   };
 }

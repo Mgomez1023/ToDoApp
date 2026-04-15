@@ -23,6 +23,22 @@ export interface Task extends TaskRecord {
   assignees: TeamMember[];
 }
 
+export interface TaskFormValues {
+  description: string;
+  dueDate: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  title: string;
+}
+
+export interface TaskMutationInput {
+  description: string | null;
+  due_date: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  title: string;
+}
+
 export interface BoardFilters {
   assigneeId: AssigneeFilter;
   priority: TaskPriorityFilter;

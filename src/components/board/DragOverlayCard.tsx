@@ -3,8 +3,18 @@ import type { Task } from "@/types/task";
 
 interface DragOverlayCardProps {
   task: Task;
+  width?: number | null;
 }
 
-export function DragOverlayCard({ task }: DragOverlayCardProps) {
-  return <TaskCard className="rotate-1 shadow-lift" task={task} />;
+export function DragOverlayCard({ task, width }: DragOverlayCardProps) {
+  return (
+    <TaskCard
+      aria-hidden="true"
+      className="pointer-events-none rotate-1"
+      isDragOverlay
+      style={width ? { width } : undefined}
+      tabIndex={-1}
+      task={task}
+    />
+  );
 }
