@@ -343,7 +343,10 @@ export function TaskDetailSheet({
           Due date
         </label>
         <input
-          className={cn(inputClassName, "h-12 max-w-[14rem] text-sm sm:max-w-none")}
+          className={cn(
+            inputClassName,
+            "block h-12 max-w-[14rem] text-sm sm:max-w-none",
+          )}
           disabled={isBusy}
           id="task-due-date"
           onChange={(event) =>
