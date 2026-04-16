@@ -6,6 +6,8 @@ import {
   type PropsWithChildren,
 } from "react";
 
+import { AnimatedSubmitButton } from "@/components/ui/AnimatedSubmitButton";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/cn";
@@ -32,7 +34,6 @@ const inputClassName =
 const defaultExpandedSections = {
   guest: false,
   member: false,
-  team: false,
 };
 type SectionKey = keyof typeof defaultExpandedSections;
 
@@ -57,6 +58,8 @@ export function TeamMembersModal({
   const [guestLookupCode, setGuestLookupCode] = useState("");
   const [memberValidationError, setMemberValidationError] = useState<string | null>(null);
   const [guestValidationError, setGuestValidationError] = useState<string | null>(null);
+  const [memberSubmitSuccessSignal, setMemberSubmitSuccessSignal] = useState(0);
+  const [guestSubmitSuccessSignal, setGuestSubmitSuccessSignal] = useState(0);
   const [expandedSections, setExpandedSections] = useState(defaultExpandedSections);
 
   useEffect(() => {
@@ -66,6 +69,8 @@ export function TeamMembersModal({
       setGuestLookupCode("");
       setMemberValidationError(null);
       setGuestValidationError(null);
+      setMemberSubmitSuccessSignal(0);
+      setGuestSubmitSuccessSignal(0);
       setExpandedSections(defaultExpandedSections);
     }
   }, [open]);
@@ -102,6 +107,7 @@ export function TeamMembersModal({
       });
       setName("");
       setAvatarColor(TEAM_MEMBER_COLOR_OPTIONS[0]);
+      setMemberSubmitSuccessSignal((currentValue) => currentValue + 1);
     } catch {
       return;
     }
@@ -137,6 +143,7 @@ export function TeamMembersModal({
     try {
       await onLinkGuestMember(guestLookupCode);
       setGuestLookupCode("");
+      setGuestSubmitSuccessSignal((currentValue) => currentValue + 1);
     } catch {
       return;
     }
@@ -144,7 +151,7 @@ export function TeamMembersModal({
 
   return (
     <Modal
-      description="Team members stay private to this guest workspace and can be assigned across multiple tasks."
+      description=""
       onClose={onClose}
       open={open}
       title="Team members"
@@ -156,6 +163,68 @@ export function TeamMembersModal({
           </div>
         ) : null}
 
+        <section className="rounded-[1.6rem] border bg-white/80 p-4 shadow-card sm:px-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-ink">Current team</h3>
+            </div>
+
+            <Badge tone={members.length > 0 ? "accent" : "neutral"}>
+              {isLoading
+                ? "Loading..."
+                : `${members.length} member${members.length === 1 ? "" : "s"}`}
+            </Badge>
+          </div>
+
+          {isLoading ? (
+            <div className="mt-4 rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-4 text-sm text-ink-muted">
+              Loading team members...
+            </div>
+          ) : members.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-4 text-sm text-ink-muted">
+              Add two or three people here so tasks can show ownership clearly on the board.
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {members.map((member) => (
+                <div
+                  className="flex min-w-0 items-center gap-3 rounded-2xl border border-line/70 bg-slate-50/80 px-3 py-2.5"
+                  key={member.id}
+                >
+                  <div
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white shadow-card"
+                    style={{ backgroundColor: member.avatar_color }}
+                  >
+                    {getInitials(member.name)}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink">{member.name}</p>
+                    <p className="truncate text-[11px] text-ink-muted">
+                      {member.linked_user_id
+                        ? "Linked guest workspace"
+                        : "Private to this guest workspace"}
+                    </p>
+                  </div>
+
+                  <Button
+                    aria-label={`Remove ${member.name}`}
+                    className="h-8 w-8 shrink-0 rounded-full px-0"
+                    disabled={deletingMemberId === member.id}
+                    onClick={() => void handleDelete(member)}
+                    size="sm"
+                    title={`Remove ${member.name}`}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {deletingMemberId === member.id ? "..." : <Trash2 className="size-4" />}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         <AccordionSection
           onToggle={() => toggleSection("member")}
           open={expandedSections.member}
@@ -163,6 +232,28 @@ export function TeamMembersModal({
         >
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(15rem,0.9fr)]">
+
+              <div className="rounded-2xl border border-white/80 bg-slate-50/85 px-4 py-4 shadow-card">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft">
+                  Preview
+                </p>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-ink">
+                      {name.trim() || "New teammate"}
+                    </p>
+                  </div>
+
+                  <div
+                    className="flex size-11 items-center justify-center rounded-full text-sm font-semibold text-white shadow-card"
+                    style={{ backgroundColor: avatarColor }}
+                  >
+                    {getInitials(name.trim() || "New teammate")}
+                  </div>
+                </div>
+              </div>
+            </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-ink" htmlFor="team-member-name">
                   Name
@@ -183,28 +274,6 @@ export function TeamMembersModal({
                 />
               </div>
 
-              <div className="rounded-2xl border border-white/80 bg-slate-50/85 px-4 py-4 shadow-card">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft">
-                  Preview
-                </p>
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-ink">
-                      {name.trim() || "New teammate"}
-                    </p>
-                    <p className="mt-1 text-xs text-ink-muted">Live avatar preview</p>
-                  </div>
-
-                  <div
-                    className="flex size-11 items-center justify-center rounded-full text-sm font-semibold text-white shadow-card"
-                    style={{ backgroundColor: avatarColor }}
-                  >
-                    {getInitials(name.trim() || "New teammate")}
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div className="space-y-2">
               <span className="text-sm font-medium text-ink">Avatar color</span>
               <div className="flex flex-wrap gap-2">
@@ -217,7 +286,7 @@ export function TeamMembersModal({
                       className={`flex size-10 items-center justify-center rounded-full border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
                         isSelected
                           ? "border-slate-950 shadow-card"
-                          : "border-white bg-white/70 hover:border-slate-300"
+                          : "border-white/80 hover:border-slate-300"
                       }`}
                       disabled={isSaving}
                       key={color}
@@ -240,9 +309,15 @@ export function TeamMembersModal({
               </div>
             ) : null}
 
-            <Button disabled={isSaving} type="submit">
-              {isSaving ? "Adding..." : "Add member"}
-            </Button>
+            <AnimatedSubmitButton
+              disabled={isSaving}
+              isLoading={isSaving}
+              loadingContent="Adding..."
+              successSignal={memberSubmitSuccessSignal}
+              type="submit"
+            >
+              Add member
+            </AnimatedSubmitButton>
           </form>
         </AccordionSection>
 
@@ -287,64 +362,17 @@ export function TeamMembersModal({
               </div>
             ) : null}
 
-            <Button disabled={isLinking} type="submit" variant="secondary">
-              {isLinking ? "Linking..." : "Add guest teammate"}
-            </Button>
+            <AnimatedSubmitButton
+              disabled={isLinking}
+              isLoading={isLinking}
+              loadingContent="Linking..."
+              successSignal={guestSubmitSuccessSignal}
+              type="submit"
+              variant="secondary"
+            >
+              Add guest teammate
+            </AnimatedSubmitButton>
           </form>
-        </AccordionSection>
-
-        <AccordionSection
-          onToggle={() => toggleSection("team")}
-          open={expandedSections.team}
-          title="Current team"
-        >
-          {isLoading ? (
-            <div className="rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-5 text-sm text-ink-muted">
-              Loading team members...
-            </div>
-          ) : members.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-5 text-sm text-ink-muted">
-              Add two or three people here so tasks can show ownership clearly on the board.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {members.map((member) => (
-                <div
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-line/80 bg-slate-50/75 px-3 py-3"
-                  key={member.id}
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div
-                      className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white shadow-card"
-                      style={{ backgroundColor: member.avatar_color }}
-                    >
-                      {getInitials(member.name)}
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-ink">{member.name}</p>
-                      <p className="text-xs text-ink-muted">
-                        {member.linked_user_id
-                          ? "Linked guest workspace"
-                          : "Private to this guest workspace"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <Button
-                    disabled={deletingMemberId === member.id}
-                    onClick={() => void handleDelete(member)}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Trash2 className="size-4" />
-                    {deletingMemberId === member.id ? "Removing..." : "Remove"}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
         </AccordionSection>
       </div>
     </Modal>

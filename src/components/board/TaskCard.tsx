@@ -40,13 +40,13 @@ export const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function Ta
       className={cn(
         "group w-full select-none rounded-[1rem] border px-3 py-3 text-left shadow-card transition-[transform,box-shadow,border-color,background-color] hover:-translate-y-0.5 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:px-3.5",
         accentLabel
-          ? "border-[color:var(--task-card-border)] bg-[color:var(--task-card-bg)] hover:border-[color:var(--task-card-border-hover)] hover:bg-[color:var(--task-card-bg-hover)]"
-          : "border-slate-200/90 bg-white hover:border-slate-300",
+          ? "border-transparent bg-[color:var(--task-card-bg)] hover:border-transparent hover:bg-[color:var(--task-card-bg-hover)]"
+          : "border-transparent bg-white hover:border-transparent hover:bg-slate-50/95",
         "cursor-grab active:cursor-grabbing",
         isDragging &&
-          "border-accent/30 bg-white/85 opacity-35 shadow-none ring-1 ring-accent/15",
+          "border-transparent bg-white/85 opacity-35 shadow-none ring-1 ring-accent/15",
         isDragOverlay &&
-          "cursor-grabbing border-accent/30 bg-white/95 shadow-shell ring-1 ring-accent/10",
+          "cursor-grabbing border-transparent bg-white/95 shadow-shell ring-1 ring-accent/10",
         className,
       )}
       {...props}
@@ -57,7 +57,7 @@ export const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function Ta
             <TaskLabels labels={task.labels} limit={2} />
           ) : null}
         </div>
-        <Badge className="shrink-0" tone={priorityToneMap[task.priority]}>
+        <Badge className="shrCurrent teamink-0" tone={priorityToneMap[task.priority]}>
           {PRIORITY_LABELS[task.priority]}
         </Badge>
       </div>

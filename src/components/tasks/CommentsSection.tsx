@@ -59,7 +59,7 @@ export function CommentsSection({
   };
 
   return (
-    <section className="space-y-4 rounded-[1.5rem] border border-line/80 bg-white/70 p-4 shadow-card">
+    <section className="space-y-4 rounded-[1.5rem] border border-transparent bg-white/70 p-4 shadow-card">
       <div className="flex items-center gap-2">
         <MessageSquareText className="size-4 text-ink-muted" />
         <h3 className="text-sm font-semibold text-ink">Comments</h3>

@@ -14,7 +14,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Tag } from "lucide-react";
+import { Check, GripVertical, Plus, Tag } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import { TaskLabels } from "@/components/tasks/TaskLabels";
@@ -146,7 +146,7 @@ export function LabelPicker({
         <div>
           <label className="text-sm font-medium text-ink">Labels</label>
           <p className="mt-1 text-xs leading-5 text-ink-muted">
-            Keep tags reusable and lightweight across this workspace.
+            Labels will be 
           </p>
         </div>
 
@@ -237,7 +237,7 @@ export function LabelPicker({
       ) : null}
 
       {canManage && isCreateOpen ? (
-        <div className="space-y-3 rounded-2xl border border-line/80 bg-white/80 p-4 shadow-card">
+        <div className="space-y-3 rounded-2xl border border-transparent bg-white/80 p-4 shadow-card">
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">
               Label name
@@ -264,15 +264,21 @@ export function LabelPicker({
                   <button
                     aria-label={`Use ${color} for the label`}
                     className={cn(
-                      "size-8 rounded-full border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                      isSelected ? "scale-105 border-slate-900" : "border-white",
+                      "flex size-8 items-center justify-center rounded-full border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                      isSelected
+                        ? "scale-110 border-white shadow-card ring-2 ring-ink/20 ring-offset-2 ring-offset-canvas"
+                        : "border-white/80 hover:scale-105",
                     )}
                     disabled={disabled || isCreatingLabel}
                     key={color}
                     onClick={() => setNewLabelColor(color)}
                     style={{ backgroundColor: color }}
                     type="button"
-                  />
+                  >
+                    {isSelected ? (
+                      <Check className="size-3.5 text-white drop-shadow-[0_1px_2px_rgba(15,23,42,0.45)]" />
+                    ) : null}
+                  </button>
                 );
               })}
             </div>

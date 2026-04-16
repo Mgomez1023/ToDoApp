@@ -101,7 +101,7 @@ export function AssigneePicker({
                   className={cn(
                     "flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                     isSelected
-                      ? "border-accent/30 bg-blue-50 shadow-card"
+                      ? "border-accent/35 bg-[rgb(var(--color-accent-rgb)/0.14)] shadow-card hover:bg-[rgb(var(--color-accent-rgb)/0.18)]"
                       : "border-line/80 bg-white/70 hover:border-slate-300 hover:bg-white",
                     disabled && "cursor-not-allowed opacity-60",
                   )}

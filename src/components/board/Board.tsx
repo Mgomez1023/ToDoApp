@@ -6,6 +6,7 @@ import {
   type DragCancelEvent,
   type DragEndEvent,
   type DragStartEvent,
+  useDroppable,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -14,6 +15,7 @@ import {
   Plus,
   Search,
   SearchX,
+  Trash2,
   X,
 } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -26,6 +28,8 @@ import { SearchBar } from "@/components/filters/SearchBar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Modal } from "@/components/ui/Modal";
+import { cn } from "@/lib/cn";
 import {
   BOARD_COLUMNS,
   filterTasks,
@@ -41,9 +45,12 @@ import type {
 } from "@/types/task";
 import type { TeamMember } from "@/types/team";
 
+const TRASH_DROPZONE_ID = "trash-dropzone";
+
 interface BoardProps {
   filters: BoardFilters;
   isLoading: boolean;
+  isDeletingTask: boolean;
   labels: Label[];
   members: TeamMember[];
   mutationError: string | null;
@@ -55,6 +62,7 @@ interface BoardProps {
   onResetFilters: () => void;
   onRetry: () => void;
   onSearchChange: (value: string) => void;
+  onTaskDelete: (taskId: string) => Promise<void>;
   onTaskMove: (taskId: string, nextStatus: TaskStatus) => Promise<void>;
   onTaskSelect: (taskId: string) => void;
   sessionError: string | null;
@@ -65,6 +73,7 @@ interface BoardProps {
 export function Board({
   filters,
   isLoading,
+  isDeletingTask,
   labels,
   members,
   mutationError,
@@ -76,6 +85,7 @@ export function Board({
   onResetFilters,
   onRetry,
   onSearchChange,
+  onTaskDelete,
   onTaskMove,
   onTaskSelect,
   sessionError,
@@ -84,6 +94,7 @@ export function Board({
 }: BoardProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [activeTaskWidth, setActiveTaskWidth] = useState<number | null>(null);
+  const [taskPendingDelete, setTaskPendingDelete] = useState<Task | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(
     () => filters.searchQuery.trim().length > 0,
   );
@@ -154,11 +165,31 @@ export function Board({
 
     resetActiveDrag(event);
 
+    if (currentTask && overId === TRASH_DROPZONE_ID) {
+      onDismissMutationError();
+      setTaskPendingDelete(currentTask);
+      return;
+    }
+
     if (!currentTask || !nextStatus || currentTask.status === nextStatus) {
       return;
     }
 
     void onTaskMove(taskId, nextStatus);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!taskPendingDelete) {
+      return;
+    }
+
+    try {
+      await onTaskDelete(taskPendingDelete.id);
+      onDismissMutationError();
+      setTaskPendingDelete(null);
+    } catch {
+      return;
+    }
   };
 
   const dragOverlay = (
@@ -175,7 +206,7 @@ export function Board({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-semibold tracking-[-0.04em] text-ink sm:text-[1.65rem]">
-                  Pulse Board
+                  Next Play - To Do
                 </h1>
                 {hasActiveFilters ? (
                   <Badge tone="accent">
@@ -201,7 +232,6 @@ export function Board({
                 variant="secondary"
               >
                 <Search className="size-4" />
-                Search
               </Button>
               <Button
                 onClick={onCreateTask}
@@ -304,7 +334,7 @@ export function Board({
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold text-ink">
-                    Couldn&apos;t save the latest board move
+                    Couldn&apos;t update the task
                   </h2>
                   <p className="mt-1 text-sm leading-6 text-ink-muted">
                     {mutationError}
@@ -365,11 +395,91 @@ export function Board({
               </div>
             </section>
 
+            {activeTask ? <DragDeleteTarget /> : null}
+
             {typeof document !== "undefined"
               ? createPortal(dragOverlay, document.body)
               : dragOverlay}
           </DndContext>
         ) : null}
+      </div>
+
+      <Modal
+        description={
+          taskPendingDelete
+            ? `This will permanently remove "${taskPendingDelete.title}" from the workspace.`
+            : undefined
+        }
+        onClose={() => {
+          onDismissMutationError();
+          setTaskPendingDelete(null);
+        }}
+        open={Boolean(taskPendingDelete)}
+        title="Delete task?"
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-rose-200 bg-rose-50/90 px-4 py-3 text-sm text-rose-700">
+            Deleting a task removes it from the board immediately.
+          </div>
+
+          {mutationError ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/90 px-4 py-3 text-sm text-rose-700">
+              {mutationError}
+            </div>
+          ) : null}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              onClick={() => {
+                onDismissMutationError();
+                setTaskPendingDelete(null);
+              }}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-rose-600 text-white hover:bg-rose-700"
+              disabled={isDeletingTask}
+              onClick={() => void handleDeleteConfirm()}
+              size="sm"
+              type="button"
+            >
+              <Trash2 className="size-4" />
+              {isDeletingTask ? "Deleting..." : "Delete task"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+function DragDeleteTarget() {
+  const { isOver, setNodeRef } = useDroppable({
+    id: TRASH_DROPZONE_ID,
+  });
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[70]">
+      <div className="absolute bottom-5 right-5 sm:bottom-6 sm:right-6">
+        <div
+          ref={setNodeRef}
+          className={cn(
+            "pointer-events-auto flex size-16 items-center justify-center rounded-full border-2 border-rose-500/85 bg-[color:var(--color-surface-elevated)] text-rose-600 shadow-[0_18px_40px_rgba(190,24,93,0.2)] transition-all duration-200 ease-out",
+            isOver &&
+              "size-20 scale-110 border-rose-600 bg-[color:var(--color-surface-muted-strong)] text-rose-700 shadow-[0_24px_55px_rgba(190,24,93,0.28)]",
+          )}
+        >
+          <Trash2
+            className={cn(
+              "size-7 transition-[width,height,transform] duration-200",
+              isOver && "size-9",
+            )}
+          />
+        </div>
       </div>
     </div>
   );

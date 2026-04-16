@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { StatsPopoverPanel } from "@/components/board/StatsPopover";
 import { cn } from "@/lib/cn";
 import type { ThemeMode } from "@/hooks/useThemePreference";
+import { getGuestCode } from "@/lib/utils";
 import type { Task } from "@/types/task";
 
 interface WorkspaceRailProps {
@@ -56,7 +57,7 @@ export function WorkspaceRail({
   theme,
   visibleTaskCount,
 }: WorkspaceRailProps) {
-  const guestLabel = guestUserId ? guestUserId.slice(0, 8).toUpperCase() : "GUEST";
+  const guestLabel = guestUserId ? getGuestCode(guestUserId) : "GUEST";
 
   return (
     <>
@@ -65,7 +66,7 @@ export function WorkspaceRail({
           <div className="min-w-0">
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-soft">
-                Pulse Workspace
+                Workspace
               </p>
               <p className="truncate text-sm font-semibold text-ink">{guestLabel}</p>
             </div>
@@ -87,7 +88,12 @@ export function WorkspaceRail({
               tasks={tasks}
               visibleTaskCount={visibleTaskCount}
             />
-            <ThemeRailButton compact onThemeChange={onThemeChange} theme={theme} />
+            <ThemeRailButton
+              compact
+              guestLabel={guestLabel}
+              onThemeChange={onThemeChange}
+              theme={theme}
+            />
           </nav>
         </div>
       </div>
@@ -111,7 +117,11 @@ export function WorkspaceRail({
 
           <div className="border-t border-line/80 pt-4">
             <div className="flex flex-col items-center gap-1.5">
-              <ThemeRailButton onThemeChange={onThemeChange} theme={theme} />
+              <ThemeRailButton
+                guestLabel={guestLabel}
+                onThemeChange={onThemeChange}
+                theme={theme}
+              />
               {utilityNav.map((item) => (
                 <RailIcon key={item.label} {...item} />
               ))}
@@ -180,6 +190,7 @@ interface SummaryRailButtonProps {
 
 interface ThemeRailButtonProps {
   compact?: boolean;
+  guestLabel: string;
   onThemeChange: (theme: ThemeMode) => void;
   theme: ThemeMode;
 }
@@ -253,6 +264,7 @@ function SummaryRailButton({
 
 function ThemeRailButton({
   compact = false,
+  guestLabel,
   onThemeChange,
   theme,
 }: ThemeRailButtonProps) {
@@ -308,6 +320,7 @@ function ThemeRailButton({
               ? "right-0 top-[calc(100%+0.75rem)]"
               : "bottom-0 left-[calc(100%+0.75rem)]",
           )}
+          guestLabel={guestLabel}
           onThemeChange={onThemeChange}
           theme={theme}
         />
@@ -318,12 +331,14 @@ function ThemeRailButton({
 
 interface ThemeSettingsPanelProps {
   className?: string;
+  guestLabel: string;
   onThemeChange: (theme: ThemeMode) => void;
   theme: ThemeMode;
 }
 
 function ThemeSettingsPanel({
   className,
+  guestLabel,
   onThemeChange,
   theme,
 }: ThemeSettingsPanelProps) {
@@ -340,9 +355,6 @@ function ThemeSettingsPanel({
         </div>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink">Appearance</p>
-          <p className="mt-1 text-xs leading-5 text-ink-muted">
-            Switch the workspace between light and dark with a softer, low-glare palette.
-          </p>
         </div>
       </div>
 
@@ -392,6 +404,13 @@ function ThemeSettingsPanel({
             Dark
           </button>
         </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border-line/80 bg-surface-muted px-3.5 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-soft">
+          Workspace Session
+        </p>
+        <p className="mt-1 text-sm font-semibold text-ink">{guestLabel}</p>
       </div>
     </div>
   );

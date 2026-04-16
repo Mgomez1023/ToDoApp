@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/cn";
 import { useBoardStats } from "@/hooks/useBoardStats";
 import type { Task } from "@/types/task";
@@ -28,11 +27,7 @@ export function StatsPopoverPanel({
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-ink">Board snapshot</p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Quick counts without leaving the board.
-          </p>
         </div>
-        <Badge tone="accent">{stats.totalTasks} total</Badge>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -59,7 +54,7 @@ interface StatCardProps {
 
 function StatCard({ label, value }: StatCardProps) {
   return (
-    <div className="rounded-2xl border border-line/80 bg-slate-50/85 px-3 py-3">
+    <div className="rounded-2xl border-line/80 bg-slate-50/85 px-3 py-3">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">
         {label}
       </p>

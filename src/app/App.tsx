@@ -204,6 +204,7 @@ export function App() {
           <main className="relative z-0 flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.75rem] border border-line bg-surface shadow-shell backdrop-blur-xl lg:min-h-[calc(100vh-2rem)]">
             <Board
               filters={boardFilters}
+              isDeletingTask={tasks.isDeleting}
               isLoading={guestSession.isLoading || tasks.isLoading}
               labels={labels.labels}
               members={teamMembers.members}
@@ -224,6 +225,7 @@ export function App() {
               onResetFilters={handleResetFilters}
               onRetry={handleRetry}
               onSearchChange={setSearchQuery}
+              onTaskDelete={tasks.deleteTask}
               onTaskMove={tasks.moveTask}
               onTaskSelect={(taskId) => {
                 tasks.clearMutationError();

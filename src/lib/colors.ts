@@ -37,16 +37,16 @@ export function getLabelColorStyles(color: string) {
 
 export function getTaskCardColorStyles(color: string) {
   return {
-    "--task-card-bg": hexToRgba(color, 0.08),
-    "--task-card-bg-hover": hexToRgba(color, 0.1),
-    "--task-card-border": hexToRgba(color, 0.34),
-    "--task-card-border-hover": hexToRgba(color, 0.42),
-    "--task-card-divider": hexToRgba(color, 0.18),
-    "--task-card-handle-bg": hexToRgba(color, 0.08),
-    "--task-card-handle-bg-hover": hexToRgba(color, 0.1),
-    "--task-card-handle-border": hexToRgba(color, 0.2),
-    "--task-card-handle-border-hover": hexToRgba(color, 0.28),
-    "--task-card-handle-color": hexToRgba(color, 0.78),
+    "--task-card-bg": hexToRgba(color, 0.14),
+    "--task-card-bg-hover": hexToRgba(color, 0.18),
+    "--task-card-border": hexToRgba(color, 0.42),
+    "--task-card-border-hover": hexToRgba(color, 0.52),
+    "--task-card-divider": hexToRgba(color, 0.24),
+    "--task-card-handle-bg": hexToRgba(color, 0.14),
+    "--task-card-handle-bg-hover": hexToRgba(color, 0.18),
+    "--task-card-handle-border": hexToRgba(color, 0.28),
+    "--task-card-handle-border-hover": hexToRgba(color, 0.36),
+    "--task-card-handle-color": hexToRgba(color, 0.88),
     "--task-card-handle-color-hover": color,
   } satisfies Record<`--${string}`, string>;
 }

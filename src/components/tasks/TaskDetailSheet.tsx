@@ -12,6 +12,7 @@ import { CommentsSection } from "@/components/tasks/CommentsSection";
 import { LabelPicker } from "@/components/tasks/LabelPicker";
 import { AvatarGroup } from "@/components/team/AvatarGroup";
 import { AssigneePicker } from "@/components/team/AssigneePicker";
+import { AnimatedSubmitButton } from "@/components/ui/AnimatedSubmitButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
@@ -53,6 +54,13 @@ const defaultTaskSections = {
   labels: false,
 };
 type TaskSectionKey = keyof typeof defaultTaskSections;
+
+function getDefaultExpandedSections(mode: TaskDetailSheetProps["mode"]) {
+  return {
+    ...defaultTaskSections,
+    details: mode === "create",
+  };
+}
 
 function getInitialValues(task: Task | null): TaskFormValues {
   return {
@@ -105,7 +113,10 @@ export function TaskDetailSheet({
 }: TaskDetailSheetProps) {
   const [values, setValues] = useState<TaskFormValues>(() => getInitialValues(task));
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState(defaultTaskSections);
+  const [submitSuccessSignal, setSubmitSuccessSignal] = useState(0);
+  const [expandedSections, setExpandedSections] = useState(() =>
+    getDefaultExpandedSections(mode),
+  );
   const isEditing = mode === "edit";
   const isBusy = isSaving || isDeleting;
   const taskDetails = useTaskDetails(task?.id, open && isEditing && Boolean(task?.id));
@@ -118,7 +129,7 @@ export function TaskDetailSheet({
 
     setValues(getInitialValues(task));
     setValidationError(null);
-    setExpandedSections(defaultTaskSections);
+    setExpandedSections(getDefaultExpandedSections(mode));
   }, [mode, open, task]);
 
   useEffect(() => {
@@ -201,6 +212,8 @@ export function TaskDetailSheet({
       if (isEditing && task?.id) {
         await taskDetails.refetch();
       }
+
+      setSubmitSuccessSignal((currentValue) => currentValue + 1);
     } catch {
       return;
     }
@@ -574,15 +587,15 @@ export function TaskDetailSheet({
                   >
                     Close
                   </Button>
-                  <Button disabled={isBusy} type="submit">
-                    {isSaving
-                      ? isEditing
-                        ? "Saving..."
-                        : "Creating..."
-                      : isEditing
-                        ? "Save changes"
-                        : "Create task"}
-                  </Button>
+                  <AnimatedSubmitButton
+                    disabled={isBusy}
+                    isLoading={isSaving}
+                    loadingContent={isEditing ? "Saving..." : "Creating..."}
+                    successSignal={submitSuccessSignal}
+                    type="submit"
+                  >
+                    {isEditing ? "Save changes" : "Create task"}
+                  </AnimatedSubmitButton>
                 </div>
               </div>
             </footer>
@@ -609,8 +622,8 @@ function TaskAccordionSection({
   return (
     <section
       className={cn(
-        "rounded-[1.5rem] border border-line/80 bg-white/80 shadow-card transition-all duration-[360ms]",
-        open ? "border-slate-200 bg-white/90" : "hover:bg-white/90",
+        "rounded-[1.5rem] border border-transparent bg-white/80 shadow-card transition-all duration-[360ms]",
+        open ? "border-transparent bg-white/90" : "hover:bg-white/90",
       )}
     >
       <button
