@@ -154,6 +154,7 @@ export function TeamMembersModal({
       description=""
       onClose={onClose}
       open={open}
+      presentation="sheet"
       title="Team members"
     >
       <div className="space-y-3">

@@ -16,6 +16,8 @@ import type { ThemeMode } from "@/hooks/useThemePreference";
 import { getGuestCode } from "@/lib/utils";
 import type { Task } from "@/types/task";
 
+const RAIL_PANEL_EXIT_DURATION_MS = 220;
+
 interface WorkspaceRailProps {
   guestUserId: string | null;
   hasActiveFilters: boolean;
@@ -195,6 +197,40 @@ interface ThemeRailButtonProps {
   theme: ThemeMode;
 }
 
+function useRailPanelTransition(open: boolean) {
+  const [isRendered, setIsRendered] = useState(open);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setIsRendered(true);
+
+      const frame = window.requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frame);
+      };
+    }
+
+    setIsVisible(false);
+
+    const timeout = window.setTimeout(() => {
+      setIsRendered(false);
+    }, RAIL_PANEL_EXIT_DURATION_MS);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [open]);
+
+  return {
+    isRendered,
+    isVisible,
+  };
+}
+
 function SummaryRailButton({
   compact = false,
   hasActiveFilters,
@@ -203,6 +239,7 @@ function SummaryRailButton({
 }: SummaryRailButtonProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const { isRendered, isVisible } = useRailPanelTransition(open);
 
   useEffect(() => {
     if (!open) {
@@ -245,13 +282,16 @@ function SummaryRailButton({
         onClick={() => setOpen((currentValue) => !currentValue)}
       />
 
-      {open ? (
+      {isRendered ? (
         <StatsPopoverPanel
           className={cn(
-            "absolute z-50",
+            "absolute z-50 origin-top-right transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            isVisible
+              ? "opacity-100 rail-panel-enter"
+              : "translate-y-2 scale-[0.985] opacity-0",
             compact
               ? "right-0 top-[calc(100%+0.75rem)]"
-              : "left-[calc(100%+0.75rem)] top-1/2 -translate-y-1/2",
+              : "left-[calc(100%+0.75rem)] top-1/2 -translate-y-1/2 origin-left",
           )}
           hasActiveFilters={hasActiveFilters}
           tasks={tasks}
@@ -270,6 +310,7 @@ function ThemeRailButton({
 }: ThemeRailButtonProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const { isRendered, isVisible } = useRailPanelTransition(open);
 
   useEffect(() => {
     if (!open) {
@@ -312,13 +353,16 @@ function ThemeRailButton({
         onClick={() => setOpen((currentValue) => !currentValue)}
       />
 
-      {open ? (
+      {isRendered ? (
         <ThemeSettingsPanel
           className={cn(
-            "absolute z-50",
+            "absolute z-50 origin-top-right transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            isVisible
+              ? "opacity-100 rail-panel-enter"
+              : "translate-y-2 scale-[0.985] opacity-0",
             compact
               ? "right-0 top-[calc(100%+0.75rem)]"
-              : "bottom-0 left-[calc(100%+0.75rem)]",
+              : "bottom-0 left-[calc(100%+0.75rem)] origin-left-bottom",
           )}
           guestLabel={guestLabel}
           onThemeChange={onThemeChange}

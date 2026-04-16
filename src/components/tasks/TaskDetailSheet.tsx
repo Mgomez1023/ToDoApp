@@ -23,6 +23,8 @@ import { TASK_PRIORITIES, TASK_STATUSES, type Task, type TaskFormValues } from "
 import type { Label } from "@/types/label";
 import type { TeamMember } from "@/types/team";
 
+const TASK_SHEET_EXIT_DURATION_MS = 260;
+
 interface TaskDetailSheetProps {
   canManageAssignees: boolean;
   canManageLabels: boolean;
@@ -117,6 +119,8 @@ export function TaskDetailSheet({
   const [expandedSections, setExpandedSections] = useState(() =>
     getDefaultExpandedSections(mode),
   );
+  const [isRendered, setIsRendered] = useState(open);
+  const [isVisible, setIsVisible] = useState(false);
   const isEditing = mode === "edit";
   const isBusy = isSaving || isDeleting;
   const taskDetails = useTaskDetails(task?.id, open && isEditing && Boolean(task?.id));
@@ -181,7 +185,31 @@ export function TaskDetailSheet({
     };
   }, [onClose, open]);
 
-  if (!open || typeof document === "undefined") {
+  useEffect(() => {
+    if (open) {
+      setIsRendered(true);
+
+      const frame = window.requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frame);
+      };
+    }
+
+    setIsVisible(false);
+
+    const timeout = window.setTimeout(() => {
+      setIsRendered(false);
+    }, TASK_SHEET_EXIT_DURATION_MS);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [open]);
+
+  if (!isRendered || typeof document === "undefined") {
     return null;
   }
 
@@ -438,7 +466,11 @@ export function TaskDetailSheet({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-overlay backdrop-blur-sm"
+      className={cn(
+        "fixed inset-0 z-50 bg-overlay transition-[opacity,backdrop-filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+        isVisible && "modal-backdrop-enter",
+        isVisible ? "opacity-100 backdrop-blur-sm" : "opacity-0 backdrop-blur-none",
+      )}
       onClick={onClose}
       role="presentation"
     >
@@ -451,7 +483,10 @@ export function TaskDetailSheet({
           aria-labelledby="task-detail-title"
           aria-modal="true"
           className={cn(
-            "flex w-full max-w-[50rem] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-[2rem] border border-line bg-surface-elevated shadow-shell",
+            "flex w-full max-w-[50rem] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-[2rem] border border-line bg-surface-elevated shadow-shell transition-[opacity,transform,box-shadow] duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+            isVisible
+              ? "translate-y-0 opacity-100 modal-sheet-enter"
+              : "translate-y-12 opacity-0 sm:translate-y-4 sm:scale-[0.985]",
           )}
           onClick={(event) => event.stopPropagation()}
           role="dialog"
