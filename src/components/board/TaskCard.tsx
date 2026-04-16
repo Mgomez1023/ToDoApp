@@ -38,7 +38,7 @@ export const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function Ta
       style={cardStyle}
       type="button"
       className={cn(
-        "group w-full select-none rounded-[1rem] border px-3 py-3 text-left shadow-card transition-[transform,box-shadow,border-color,background-color] hover:-translate-y-0.5 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:px-3.5",
+        "group w-full touch-none select-none rounded-[1rem] border px-3 py-3 text-left shadow-card transition-[transform,box-shadow,border-color,background-color] hover:-translate-y-0.5 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:px-3.5",
         accentLabel
           ? "border-transparent bg-[color:var(--task-card-bg)] hover:border-transparent hover:bg-[color:var(--task-card-bg-hover)]"
           : "border-transparent bg-white hover:border-transparent hover:bg-slate-50/95",

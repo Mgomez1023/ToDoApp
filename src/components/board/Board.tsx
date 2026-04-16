@@ -1,7 +1,7 @@
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   type DragCancelEvent,
   type DragEndEvent,
@@ -106,7 +106,7 @@ export function Board({
     [activeTaskId, tasks],
   );
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 8,
       },
