@@ -31,6 +31,16 @@ export const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function Ta
     ? ({ ...getTaskCardColorStyles(accentLabel.color), ...style } as CSSProperties)
     : style;
   const dueDate = getDueDateMeta(task.due_date);
+  const desktopDueDateText = dueDate
+    ? dueDate.tone === "normal"
+      ? dueDate.formattedDate
+      : `${dueDate.shortLabel} · ${dueDate.formattedDate}`
+    : null;
+  const mobileDueDateText = dueDate
+    ? dueDate.tone === "normal"
+      ? dueDate.compactDate
+      : `${dueDate.mobileLabel} · ${dueDate.compactDate}`
+    : null;
 
   return (
     <button
@@ -83,26 +93,25 @@ export const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function Ta
           {dueDate ? (
             <div
               className={cn(
-                "inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-semibold sm:px-2.5 sm:text-[11px]",
+                "flex max-w-[8.75rem] min-w-0 items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-semibold sm:max-w-full sm:px-2.5 sm:text-[11px]",
                 dueDate.tone === "overdue" &&
-                  "border border-rose-200 bg-rose-50 text-rose-700",
+                  "border-rose-200 bg-rose-50 text-rose-700",
                 dueDate.tone === "today" &&
-                  "border border-blue-200 bg-blue-50 text-blue-700",
+                  "border-blue-200 bg-blue-50 text-blue-700",
                 dueDate.tone === "soon" &&
-                  "border border-amber-200 bg-amber-50 text-amber-700",
+                  "border-amber-200 bg-amber-50 text-amber-700",
                 dueDate.tone === "normal" &&
-                  "border border-line/80 bg-slate-50 text-ink-muted",
+                  "border-line/80 bg-slate-50 text-ink-muted",
               )}
             >
               <CalendarDays className="size-3 shrink-0 sm:size-3.5" />
-              <span className="truncate">
-                {dueDate.tone === "normal"
-                  ? dueDate.formattedDate
-                  : `${dueDate.shortLabel} · ${dueDate.formattedDate}`}
-              </span>
+              <span className="min-w-0 truncate sm:hidden">{mobileDueDateText}</span>
+              <span className="hidden min-w-0 truncate sm:block">{desktopDueDateText}</span>
             </div>
           ) : (
-            <span className="text-[11px] font-medium text-ink-soft">No due date</span>
+            <span className="text-[11px] font-medium text-ink-soft">
+              No due date
+            </span>
           )}
         </div>
 

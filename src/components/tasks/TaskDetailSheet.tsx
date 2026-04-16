@@ -121,6 +121,14 @@ export function TaskDetailSheet({
   const isBusy = isSaving || isDeleting;
   const taskDetails = useTaskDetails(task?.id, open && isEditing && Boolean(task?.id));
   const dueDate = getDueDateMeta(values.dueDate || null);
+  const desktopDueDateText = dueDate
+    ? `${dueDate.shortLabel} · ${dueDate.formattedDate}`
+    : "No due date yet";
+  const mobileDueDateText = dueDate
+    ? dueDate.tone === "normal"
+      ? dueDate.compactDate
+      : `${dueDate.mobileLabel} · ${dueDate.compactDate}`
+    : "No due date";
 
   useEffect(() => {
     if (!open) {
@@ -335,7 +343,7 @@ export function TaskDetailSheet({
           Due date
         </label>
         <input
-          className={cn(inputClassName, "h-12")}
+          className={cn(inputClassName, "h-12 max-w-[14rem] text-sm sm:max-w-none")}
           disabled={isBusy}
           id="task-due-date"
           onChange={(event) =>
@@ -468,10 +476,9 @@ export function TaskDetailSheet({
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink-muted">
                   <div className="flex max-w-full min-w-0 items-center gap-1.5">
                     <CalendarDays className="size-3.5 shrink-0" />
-                    <span className="truncate">
-                      {dueDate
-                        ? `${dueDate.shortLabel} · ${dueDate.formattedDate}`
-                        : "No due date yet"}
+                    <span className="min-w-0 truncate sm:hidden">{mobileDueDateText}</span>
+                    <span className="hidden min-w-0 truncate sm:block">
+                      {desktopDueDateText}
                     </span>
                   </div>
 
