@@ -2,7 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 
 import { SUPABASE_ENV_ERROR, supabase } from "@/lib/supabase";
+import { buildTaskActivityDrafts } from "@/lib/taskActivity";
 import type { Database } from "@/types/db";
+import type { Label, TaskLabelDraft } from "@/types/label";
 import type { TeamMember } from "@/types/team";
 import type {
   Task,
@@ -28,10 +30,22 @@ interface TaskAssigneeRowWithMember {
   team_members: TeamMember | TeamMember[] | null;
 }
 
-function toTask(task: TaskRecord, assignees: TeamMember[] = []): Task {
+interface TaskLabelRowWithLabel {
+  label_id: string;
+  labels: Label | Label[] | null;
+  position: number;
+  task_id: string;
+}
+
+function toTask(
+  task: TaskRecord,
+  assignees: TeamMember[] = [],
+  labels: Label[] = [],
+): Task {
   return {
     ...task,
     assignees,
+    labels,
   };
 }
 
@@ -55,6 +69,17 @@ function mapConfirmedStatuses(tasks: Task[]) {
   ) as Record<string, TaskStatus>;
 }
 
+function getTaskMutationSnapshot(task: Pick<Task, "description" | "due_date" | "id" | "priority" | "status" | "title">) {
+  return {
+    description: task.description,
+    due_date: task.due_date,
+    id: task.id,
+    priority: task.priority,
+    status: task.status,
+    title: task.title,
+  };
+}
+
 function getErrorMessage(error: unknown, fallbackMessage: string) {
   if (
     typeof error === "object" &&
@@ -62,7 +87,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
     "code" in error &&
     error.code === "PGRST205"
   ) {
-    return "Supabase is reachable, but the task or assignee tables are missing in this project. Run supabase/schema.sql in the Supabase SQL editor, then refresh.";
+    return "Supabase is reachable, but one or more task feature tables are missing in this project. Run supabase/schema.sql in the Supabase SQL editor, then refresh.";
   }
 
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -82,12 +107,37 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
   return fallbackMessage;
 }
 
+async function requireAuthenticatedUserId(client: SupabaseClient<Database>) {
+  const {
+    data: { user },
+    error,
+  } = await client.auth.getUser();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!user) {
+    throw new Error("Guest workspace is still starting. Refresh and try again.");
+  }
+
+  return user.id;
+}
+
 function getJoinedMember(row: TaskAssigneeRowWithMember) {
   if (Array.isArray(row.team_members)) {
     return row.team_members[0] ?? null;
   }
 
   return row.team_members;
+}
+
+function getJoinedLabel(row: TaskLabelRowWithLabel) {
+  if (Array.isArray(row.labels)) {
+    return row.labels[0] ?? null;
+  }
+
+  return row.labels;
 }
 
 async function loadTaskAssigneesByTaskIds(
@@ -128,16 +178,87 @@ async function loadTaskAssigneesByTaskIds(
   return assigneesByTaskId;
 }
 
+async function loadTaskLabelsByTaskIds(
+  client: SupabaseClient<Database>,
+  taskIds: string[],
+) {
+  if (taskIds.length === 0) {
+    return new Map<string, Label[]>();
+  }
+
+  const { data, error } = await client
+    .from("task_labels")
+    .select("task_id, label_id, position, labels(*)")
+    .in("task_id", taskIds);
+
+  if (error) {
+    throw error;
+  }
+
+  const rows = (data ?? []) as TaskLabelRowWithLabel[];
+  const labelsByTaskId = new Map<
+    string,
+    Array<{
+      label: Label;
+      position: number;
+    }>
+  >();
+
+  for (const row of rows) {
+    const label = getJoinedLabel(row);
+
+    if (!label) {
+      continue;
+    }
+
+    const currentLabels = labelsByTaskId.get(row.task_id) ?? [];
+    labelsByTaskId.set(row.task_id, [
+      ...currentLabels,
+      {
+        label,
+        position: row.position,
+      },
+    ]);
+  }
+
+  for (const [taskId, labels] of labelsByTaskId.entries()) {
+    labelsByTaskId.set(
+      taskId,
+      [...labels].sort((leftEntry, rightEntry) => {
+        if (leftEntry.position === rightEntry.position) {
+          return leftEntry.label.name.localeCompare(rightEntry.label.name);
+        }
+
+        return leftEntry.position - rightEntry.position;
+      }),
+    );
+  }
+
+  return new Map(
+    [...labelsByTaskId.entries()].map(([taskId, labels]) => [
+      taskId,
+      labels.map((entry) => entry.label),
+    ]),
+  );
+}
+
 async function hydrateTasks(
   client: SupabaseClient<Database>,
   taskRows: TaskRecord[],
 ) {
-  const assigneesByTaskId = await loadTaskAssigneesByTaskIds(
-    client,
-    taskRows.map((task) => task.id),
-  );
+  const taskIds = taskRows.map((task) => task.id);
+  const [assigneesByTaskId, labelsByTaskId] = await Promise.all([
+    loadTaskAssigneesByTaskIds(client, taskIds),
+    loadTaskLabelsByTaskIds(client, taskIds),
+  ]);
 
-  return taskRows.map((task) => toTask(task, assigneesByTaskId.get(task.id) ?? []));
+  return taskRows.map((task) =>
+    toTask(
+      task,
+      assigneesByTaskId.get(task.id) ?? [],
+      labelsByTaskId.get(task.id) ?? [],
+    ),
+  );
 }
 
 async function syncTaskAssignees(
@@ -175,6 +296,58 @@ async function syncTaskAssignees(
     if (error) {
       throw error;
     }
+  }
+}
+
+async function syncTaskLabels(
+  client: SupabaseClient<Database>,
+  taskId: string,
+  previousLabelIds: string[],
+  nextLabelIds: string[],
+) {
+  const previousSet = new Set(previousLabelIds);
+  const labelsToRemove = [...previousSet].filter((labelId) => !nextLabelIds.includes(labelId));
+
+  if (nextLabelIds.length > 0) {
+    const payload: TaskLabelDraft[] = nextLabelIds.map((labelId, index) => ({
+      label_id: labelId,
+      position: index,
+      task_id: taskId,
+    }));
+    const { error } = await client
+      .from("task_labels")
+      .upsert(payload, { onConflict: "task_id,label_id" });
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  if (labelsToRemove.length > 0) {
+    const { error } = await client
+      .from("task_labels")
+      .delete()
+      .eq("task_id", taskId)
+      .in("label_id", labelsToRemove);
+
+    if (error) {
+      throw error;
+    }
+  }
+}
+
+async function insertTaskActivityEntries(
+  client: SupabaseClient<Database>,
+  entries: Database["public"]["Tables"]["task_activity"]["Insert"][],
+) {
+  if (entries.length === 0) {
+    return;
+  }
+
+  const { error } = await client.from("task_activity").insert(entries);
+
+  if (error) {
+    throw error;
   }
 }
 
@@ -291,15 +464,6 @@ export function useTasks(userId: string | null | undefined) {
       status?: TaskMutationRequest["status"];
     },
   ) => {
-    if (!userId) {
-      const message = "Guest workspace is still starting. Try again in a moment.";
-      setState((currentState) => ({
-        ...currentState,
-        mutationError: message,
-      }));
-      throw new Error(message);
-    }
-
     if (!supabase) {
       setState((currentState) => ({
         ...currentState,
@@ -319,6 +483,8 @@ export function useTasks(userId: string | null | undefined) {
     }));
 
     try {
+      const authenticatedUserId = await requireAuthenticatedUserId(client);
+
       const { data, error } = await client
         .from("tasks")
         .insert({
@@ -327,7 +493,7 @@ export function useTasks(userId: string | null | undefined) {
           priority: input.priority,
           status: input.status ?? "todo",
           title: input.title,
-          user_id: userId,
+          user_id: authenticatedUserId,
         })
         .select("*")
         .single();
@@ -340,8 +506,30 @@ export function useTasks(userId: string | null | undefined) {
       didCreateTask = true;
 
       await syncTaskAssignees(client, taskRecord.id, [], input.assigneeIds);
+      await syncTaskLabels(client, taskRecord.id, [], input.labelIds);
 
       const [nextTask] = await hydrateTasks(client, [taskRecord]);
+
+      try {
+        await insertTaskActivityEntries(
+          client,
+          buildTaskActivityDrafts({
+            actorUserId: authenticatedUserId,
+            nextAssigneeNames: nextTask.assignees.map((assignee) => assignee.name),
+            nextLabelNames: nextTask.labels.map((label) => label.name),
+            nextTask: getTaskMutationSnapshot(nextTask),
+            previousAssigneeNames: [],
+            previousLabelNames: [],
+            previousTask: null,
+          }),
+        );
+      } catch (error) {
+        setState((currentState) => ({
+          ...currentState,
+          mutationError:
+            "Task created, but activity couldn't be recorded cleanly. Refresh to verify the timeline.",
+        }));
+      }
 
       confirmedStatusesRef.current[nextTask.id] = nextTask.status;
       desiredStatusesRef.current[nextTask.id] = nextTask.status;
@@ -357,7 +545,7 @@ export function useTasks(userId: string | null | undefined) {
       const message = getErrorMessage(
         error,
         didCreateTask
-          ? "Task details were created, but assignees couldn't be saved cleanly. Refresh and try again."
+          ? "Task details were created, but related task details couldn't be fully synced. Refresh and try again."
           : "Couldn't create the task. Try again in a moment.",
       );
 
@@ -378,15 +566,6 @@ export function useTasks(userId: string | null | undefined) {
   };
 
   const updateTask = async (taskId: string, input: TaskMutationRequest) => {
-    if (!userId) {
-      const message = "Guest workspace is still starting. Try again in a moment.";
-      setState((currentState) => ({
-        ...currentState,
-        mutationError: message,
-      }));
-      throw new Error(message);
-    }
-
     if (!supabase) {
       setState((currentState) => ({
         ...currentState,
@@ -406,6 +585,8 @@ export function useTasks(userId: string | null | undefined) {
     }));
 
     try {
+      const authenticatedUserId = await requireAuthenticatedUserId(client);
+
       const { data, error } = await client
         .from("tasks")
         .update({
@@ -431,8 +612,36 @@ export function useTasks(userId: string | null | undefined) {
         currentTask?.assignees.map((assignee) => assignee.id) ?? [],
         input.assigneeIds,
       );
+      await syncTaskLabels(
+        client,
+        taskId,
+        currentTask?.labels.map((label) => label.id) ?? [],
+        input.labelIds,
+      );
 
       const [nextTask] = await hydrateTasks(client, [data]);
+
+      try {
+        await insertTaskActivityEntries(
+          client,
+          buildTaskActivityDrafts({
+            actorUserId: authenticatedUserId,
+            nextAssigneeNames: nextTask.assignees.map((assignee) => assignee.name),
+            nextLabelNames: nextTask.labels.map((label) => label.name),
+            nextTask: getTaskMutationSnapshot(nextTask),
+            previousAssigneeNames:
+              currentTask?.assignees.map((assignee) => assignee.name) ?? [],
+            previousLabelNames: currentTask?.labels.map((label) => label.name) ?? [],
+            previousTask: currentTask ? getTaskMutationSnapshot(currentTask) : null,
+          }),
+        );
+      } catch (error) {
+        setState((currentState) => ({
+          ...currentState,
+          mutationError:
+            "Task saved, but activity couldn't be recorded cleanly. Refresh to verify the timeline.",
+        }));
+      }
 
       confirmedStatusesRef.current[taskId] = nextTask.status;
       desiredStatusesRef.current[taskId] = nextTask.status;
@@ -450,7 +659,7 @@ export function useTasks(userId: string | null | undefined) {
       const message = getErrorMessage(
         error,
         didUpdateTask
-          ? "Task details were saved, but assignees couldn't be fully updated. Refresh and try again."
+          ? "Task details were saved, but related task details couldn't be fully updated. Refresh and try again."
           : "Couldn't save the task changes. Try again in a moment.",
       );
 
@@ -472,15 +681,6 @@ export function useTasks(userId: string | null | undefined) {
     const currentTask = state.tasks.find((task) => task.id === taskId);
 
     if (!currentTask || currentTask.status === nextStatus) {
-      return;
-    }
-
-    if (!userId) {
-      const message = "Guest workspace is still starting. Try again in a moment.";
-      setState((currentState) => ({
-        ...currentState,
-        mutationError: message,
-      }));
       return;
     }
 
@@ -507,6 +707,8 @@ export function useTasks(userId: string | null | undefined) {
 
     const persistMove = async () => {
       try {
+        const authenticatedUserId = await requireAuthenticatedUserId(client);
+
         const { error } = await client
           .from("tasks")
           .update({ status: nextStatus })
@@ -519,6 +721,30 @@ export function useTasks(userId: string | null | undefined) {
         }
 
         confirmedStatusesRef.current[taskId] = nextStatus;
+
+        try {
+          await insertTaskActivityEntries(
+            client,
+            buildTaskActivityDrafts({
+              actorUserId: authenticatedUserId,
+              nextAssigneeNames: currentTask.assignees.map((assignee) => assignee.name),
+              nextLabelNames: currentTask.labels.map((label) => label.name),
+              nextTask: getTaskMutationSnapshot({
+                ...currentTask,
+                status: nextStatus,
+              }),
+              previousAssigneeNames: currentTask.assignees.map((assignee) => assignee.name),
+              previousLabelNames: currentTask.labels.map((label) => label.name),
+              previousTask: getTaskMutationSnapshot(currentTask),
+            }),
+          );
+        } catch (error) {
+          setState((currentState) => ({
+            ...currentState,
+            mutationError:
+              "Task moved, but activity couldn't be recorded cleanly. Refresh to verify the timeline.",
+          }));
+        }
       } catch (error) {
         const message = getErrorMessage(
           error,
@@ -560,15 +786,6 @@ export function useTasks(userId: string | null | undefined) {
   };
 
   const deleteTask = async (taskId: string) => {
-    if (!userId) {
-      const message = "Guest workspace is still starting. Try again in a moment.";
-      setState((currentState) => ({
-        ...currentState,
-        mutationError: message,
-      }));
-      throw new Error(message);
-    }
-
     if (!supabase) {
       setState((currentState) => ({
         ...currentState,
@@ -585,11 +802,13 @@ export function useTasks(userId: string | null | undefined) {
     }));
 
     try {
+      const authenticatedUserId = await requireAuthenticatedUserId(client);
+
       const { error } = await client
         .from("tasks")
         .delete()
         .eq("id", taskId)
-        .eq("user_id", userId);
+        .eq("user_id", authenticatedUserId);
 
       if (error) {
         throw error;

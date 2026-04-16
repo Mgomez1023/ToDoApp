@@ -1,9 +1,11 @@
-import { CalendarDays, GripVertical } from "lucide-react";
-import { forwardRef, type ButtonHTMLAttributes } from "react";
+import { CalendarDays } from "lucide-react";
+import { forwardRef, type ButtonHTMLAttributes, type CSSProperties } from "react";
 
+import { TaskLabels } from "@/components/tasks/TaskLabels";
 import { AvatarGroup } from "@/components/team/AvatarGroup";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/cn";
+import { getTaskCardColorStyles } from "@/lib/colors";
 import { getDueDateMeta } from "@/lib/dates";
 import { PRIORITY_LABELS } from "@/lib/utils";
 import type { Task } from "@/types/task";
@@ -20,26 +22,26 @@ const priorityToneMap = {
   normal: "accent",
 } as const;
 
-const dueDateToneMap = {
-  normal: "neutral",
-  overdue: "danger",
-  soon: "warning",
-  today: "accent",
-} as const;
-
 export const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function TaskCard(
-  { className, isDragOverlay = false, isDragging = false, task, ...props },
+  { className, isDragOverlay = false, isDragging = false, style, task, ...props },
   ref,
 ) {
+  const accentLabel = task.labels[0] ?? null;
+  const cardStyle = accentLabel
+    ? ({ ...getTaskCardColorStyles(accentLabel.color), ...style } as CSSProperties)
+    : style;
   const dueDate = getDueDateMeta(task.due_date);
-  const showUrgencyBadge = dueDate && dueDate.tone !== "normal";
 
   return (
     <button
       ref={ref}
+      style={cardStyle}
       type="button"
       className={cn(
-        "group w-full select-none rounded-[1rem] border border-slate-200/90 bg-white px-3 py-3 text-left shadow-card transition-[transform,box-shadow,border-color,background-color] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:px-3.5",
+        "group w-full select-none rounded-[1rem] border px-3 py-3 text-left shadow-card transition-[transform,box-shadow,border-color,background-color] hover:-translate-y-0.5 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:px-3.5",
+        accentLabel
+          ? "border-[color:var(--task-card-border)] bg-[color:var(--task-card-bg)] hover:border-[color:var(--task-card-border-hover)] hover:bg-[color:var(--task-card-bg-hover)]"
+          : "border-slate-200/90 bg-white hover:border-slate-300",
         "cursor-grab active:cursor-grabbing",
         isDragging &&
           "border-accent/30 bg-white/85 opacity-35 shadow-none ring-1 ring-accent/15",
@@ -50,24 +52,14 @@ export const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function Ta
       {...props}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={priorityToneMap[task.priority]}>
-            {PRIORITY_LABELS[task.priority]}
-          </Badge>
-          {showUrgencyBadge ? (
-            <Badge tone={dueDateToneMap[dueDate.tone]}>
-              {dueDate.shortLabel}
-            </Badge>
+        <div className="min-w-0 flex-1">
+          {task.labels.length > 0 ? (
+            <TaskLabels labels={task.labels} limit={2} />
           ) : null}
         </div>
-        <div
-          className={cn(
-            "rounded-lg border border-line/70 bg-slate-50 p-1.5 text-ink-soft transition group-hover:border-slate-200 group-hover:bg-slate-100 group-hover:text-ink",
-            (isDragging || isDragOverlay) && "bg-accent/10 text-accent",
-          )}
-        >
-          <GripVertical className="size-3.5" />
-        </div>
+        <Badge className="shrink-0" tone={priorityToneMap[task.priority]}>
+          {PRIORITY_LABELS[task.priority]}
+        </Badge>
       </div>
 
       <div className="mt-2.5">
@@ -81,20 +73,33 @@ export const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function Ta
         ) : null}
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-line/70 pt-2.5">
+      <div
+        className={cn(
+          "mt-3 flex items-center justify-between gap-3 border-t pt-2.5",
+          accentLabel ? "border-t-[color:var(--task-card-divider)]" : "border-line/70",
+        )}
+      >
         <div className="min-w-0">
           {dueDate ? (
             <div
               className={cn(
-                "inline-flex items-center gap-1.5 text-[11px] font-medium",
-                dueDate.tone === "overdue" && "text-rose-700",
-                dueDate.tone === "today" && "text-blue-700",
-                dueDate.tone === "soon" && "text-amber-700",
-                dueDate.tone === "normal" && "text-ink-muted",
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                dueDate.tone === "overdue" &&
+                  "border-rose-200 bg-rose-50 text-rose-700",
+                dueDate.tone === "today" &&
+                  "border-blue-200 bg-blue-50 text-blue-700",
+                dueDate.tone === "soon" &&
+                  "border-amber-200 bg-amber-50 text-amber-700",
+                dueDate.tone === "normal" &&
+                  "border-line/80 bg-slate-50 text-ink-muted",
               )}
             >
               <CalendarDays className="size-3.5" />
-              <span className="truncate">{dueDate.formattedDate}</span>
+              <span className="truncate">
+                {dueDate.tone === "normal"
+                  ? dueDate.formattedDate
+                  : `${dueDate.shortLabel} · ${dueDate.formattedDate}`}
+              </span>
             </div>
           ) : (
             <span className="text-[11px] font-medium text-ink-soft">No due date</span>

@@ -23,8 +23,8 @@ export function Modal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-[2rem] border border-white/70 bg-white p-6 shadow-shell">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-overlay p-4 backdrop-blur-sm sm:items-center sm:p-6">
+      <div className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-line bg-surface-elevated p-6 shadow-shell sm:max-h-[calc(100vh-3rem)]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-ink">{title}</h2>
@@ -43,7 +43,7 @@ export function Modal({
             <X className="size-4" />
           </Button>
         </div>
-        <div className="mt-6">{children}</div>
+        <div className="mt-6 min-h-0 overflow-y-auto pr-1">{children}</div>
       </div>
     </div>,
     document.body,

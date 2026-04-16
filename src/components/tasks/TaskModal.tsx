@@ -1,16 +1,22 @@
-import { TaskForm } from "@/components/tasks/TaskForm";
-import { Modal } from "@/components/ui/Modal";
+import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
+import type { Label } from "@/types/label";
 import type { Task, TaskFormValues } from "@/types/task";
 import type { TeamMember } from "@/types/team";
 
 interface TaskModalProps {
   canManageAssignees: boolean;
+  canManageLabels: boolean;
+  currentUserId: string | null;
   error: string | null;
+  isCreatingLabel: boolean;
   isDeleting: boolean;
   isSaving: boolean;
+  labelError: string | null;
+  labels: Label[];
   members: TeamMember[];
   mode: "create" | "edit";
   onClose: () => void;
+  onCreateLabel: (input: { color: string; name: string }) => Promise<Label>;
   onDelete?: () => Promise<void>;
   onManageTeam: () => void;
   onSubmit: (values: TaskFormValues) => Promise<void>;
@@ -20,47 +26,48 @@ interface TaskModalProps {
 
 export function TaskModal({
   canManageAssignees,
+  canManageLabels,
+  currentUserId,
   error,
+  isCreatingLabel,
   isDeleting,
   isSaving,
+  labelError,
+  labels,
   members,
   mode,
   onClose,
+  onCreateLabel,
   onDelete,
   onManageTeam,
   onSubmit,
   open,
   task,
 }: TaskModalProps) {
-  const isEditing = mode === "edit";
-
-  if (isEditing && !task) {
+  if (mode === "edit" && !task) {
     return null;
   }
 
   return (
-    <Modal
-      description={
-        isEditing
-          ? "Update the task details, change its board status, or remove it from the workspace."
-          : "Capture the next piece of work and it will land in To Do automatically."
-      }
+    <TaskDetailSheet
+      canManageAssignees={canManageAssignees}
+      canManageLabels={canManageLabels}
+      currentUserId={currentUserId}
+      error={error}
+      isCreatingLabel={isCreatingLabel}
+      isDeleting={isDeleting}
+      isSaving={isSaving}
+      labelError={labelError}
+      labels={labels}
+      members={members}
+      mode={mode}
       onClose={onClose}
+      onCreateLabel={onCreateLabel}
+      onDelete={onDelete}
+      onManageTeam={onManageTeam}
+      onSubmit={onSubmit}
       open={open}
-      title={isEditing ? "Edit task" : "New task"}
-    >
-      <TaskForm
-        canManageAssignees={canManageAssignees}
-        error={error}
-        isDeleting={isDeleting}
-        isSaving={isSaving}
-        members={members}
-        mode={mode}
-        onDelete={onDelete}
-        onManageTeam={onManageTeam}
-        onSubmit={onSubmit}
-        task={task}
-      />
-    </Modal>
+      task={task}
+    />
   );
 }

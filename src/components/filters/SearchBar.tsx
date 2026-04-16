@@ -1,16 +1,26 @@
+import type { Ref } from "react";
 import { Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/cn";
 
 interface SearchBarProps {
+  className?: string;
+  inputRef?: Ref<HTMLInputElement>;
   onChange: (value: string) => void;
   onClear: () => void;
   value: string;
 }
 
-export function SearchBar({ onChange, onClear, value }: SearchBarProps) {
+export function SearchBar({
+  className,
+  inputRef,
+  onChange,
+  onClear,
+  value,
+}: SearchBarProps) {
   return (
-    <div className="group relative block flex-1">
+    <div className={cn("group relative block min-w-0", className)}>
       <label className="sr-only" htmlFor="task-search">
         Search tasks
       </label>
@@ -20,6 +30,7 @@ export function SearchBar({ onChange, onClear, value }: SearchBarProps) {
         className="h-10 w-full rounded-xl border border-line/80 bg-slate-50/85 pl-10 pr-10 text-sm text-ink shadow-card outline-none transition placeholder:text-ink-soft focus:border-accent focus:ring-4 focus:ring-blue-100"
         onChange={(event) => onChange(event.target.value)}
         placeholder="Search task titles"
+        ref={inputRef}
         type="search"
         value={value}
       />

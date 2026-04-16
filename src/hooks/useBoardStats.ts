@@ -10,9 +10,11 @@ export function useBoardStats(tasks: Task[]) {
   const inProgressTasks = tasks.filter(
     (task) => task.status === "in_progress",
   ).length;
+  const highPriorityTasks = tasks.filter((task) => task.priority === "high").length;
 
   return {
     completedTasks,
+    highPriorityTasks,
     inProgressTasks,
     overdueTasks,
     totalTasks,

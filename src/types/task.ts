@@ -1,4 +1,5 @@
 import type { Database } from "@/types/db";
+import type { Label, LabelFilter } from "@/types/label";
 import type { TeamMember } from "@/types/team";
 
 export const TASK_STATUSES = [
@@ -25,12 +26,14 @@ export type TaskAssigneeDraft =
 
 export interface Task extends TaskRecord {
   assignees: TeamMember[];
+  labels: Label[];
 }
 
 export interface TaskFormValues {
   assigneeIds: string[];
   description: string;
   dueDate: string;
+  labelIds: string[];
   priority: TaskPriority;
   status: TaskStatus;
   title: string;
@@ -46,10 +49,12 @@ export interface TaskMutationInput {
 
 export interface TaskMutationRequest extends TaskMutationInput {
   assigneeIds: string[];
+  labelIds: string[];
 }
 
 export interface BoardFilters {
   assigneeId: AssigneeFilter;
+  labelId: LabelFilter;
   priority: TaskPriorityFilter;
   searchQuery: string;
 }

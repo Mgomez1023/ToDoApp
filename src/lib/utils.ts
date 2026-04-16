@@ -93,6 +93,14 @@ export function matchesAssignee(task: Task, assigneeId: AssigneeFilter) {
   return task.assignees.some((assignee) => assignee.id === assigneeId);
 }
 
+export function matchesLabel(task: Task, labelId: string | "all") {
+  if (labelId === "all") {
+    return true;
+  }
+
+  return task.labels.some((label) => label.id === labelId);
+}
+
 export function filterTasks(tasks: Task[], filters: BoardFilters) {
   const normalizedQuery = filters.searchQuery.trim().toLowerCase();
 
@@ -104,7 +112,12 @@ export function filterTasks(tasks: Task[], filters: BoardFilters) {
     const matchesPriority =
       filters.priority === "all" || task.priority === filters.priority;
 
-    return matchesQuery && matchesPriority && matchesAssignee(task, filters.assigneeId);
+    return (
+      matchesQuery &&
+      matchesPriority &&
+      matchesAssignee(task, filters.assigneeId) &&
+      matchesLabel(task, filters.labelId)
+    );
   });
 }
 

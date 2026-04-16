@@ -105,7 +105,7 @@ export function BoardColumn({
             )}
             description={
               hasActiveFilters
-                ? "No tasks in this stage match the current search or priority filter."
+                ? "No tasks in this stage match the current filters."
                 : emptyDescription
             }
             icon={Inbox}
@@ -136,7 +136,7 @@ function DraggableTaskCard({ onClick, task }: DraggableTaskCardProps) {
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      aria-label={`${task.title}. Drag to move between columns or click to edit.`}
+      aria-label={`${task.title}. Drag to move between columns or click to open task details.`}
       className={cn("relative", isDragging && "z-0")}
       isDragging={isDragging}
       onClick={onClick}

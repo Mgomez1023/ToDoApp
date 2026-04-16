@@ -18,12 +18,13 @@ const buttonVariants = cva(
       },
       variant: {
         primary:
-          "bg-ink text-white shadow-card hover:-translate-y-0.5 hover:bg-slate-900",
+          "bg-[var(--color-button-primary-bg)] text-[color:var(--color-button-primary-ink)] shadow-card hover:-translate-y-0.5 hover:bg-[var(--color-button-primary-bg-hover)]",
         secondary:
-          "border border-line bg-white/80 text-ink shadow-card hover:-translate-y-0.5 hover:bg-white",
-        ghost: "text-ink-muted hover:bg-white/70 hover:text-ink",
+          "border border-[var(--color-button-secondary-border)] bg-[var(--color-button-secondary-bg)] text-ink shadow-card hover:-translate-y-0.5 hover:bg-[var(--color-button-secondary-bg-hover)]",
+        ghost:
+          "text-ink-muted hover:bg-[var(--color-button-ghost-hover)] hover:text-ink",
         subtle:
-          "border border-white/70 bg-white/65 text-ink shadow-card hover:bg-white/80",
+          "border border-[var(--color-button-subtle-border)] bg-[var(--color-button-subtle-bg)] text-ink shadow-card hover:bg-[var(--color-button-subtle-bg-hover)]",
       },
     },
   },

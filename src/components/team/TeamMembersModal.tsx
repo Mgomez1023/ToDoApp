@@ -1,8 +1,14 @@
-import { Trash2, Users } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { ChevronRight, Trash2 } from "lucide-react";
+import {
+  useEffect,
+  useState,
+  type FormEvent,
+  type PropsWithChildren,
+} from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { cn } from "@/lib/cn";
 import { getInitials } from "@/lib/utils";
 import { TEAM_MEMBER_COLOR_OPTIONS, type TeamMember } from "@/types/team";
 
@@ -23,6 +29,12 @@ interface TeamMembersModalProps {
 
 const inputClassName =
   "w-full rounded-2xl border border-line bg-slate-50 px-4 text-sm text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60";
+const defaultExpandedSections = {
+  guest: false,
+  member: false,
+  team: false,
+};
+type SectionKey = keyof typeof defaultExpandedSections;
 
 export function TeamMembersModal({
   deletingMemberId,
@@ -43,26 +55,45 @@ export function TeamMembersModal({
     TEAM_MEMBER_COLOR_OPTIONS[0],
   );
   const [guestLookupCode, setGuestLookupCode] = useState("");
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [memberValidationError, setMemberValidationError] = useState<string | null>(null);
+  const [guestValidationError, setGuestValidationError] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState(defaultExpandedSections);
 
   useEffect(() => {
     if (!open) {
       setName("");
       setAvatarColor(TEAM_MEMBER_COLOR_OPTIONS[0]);
       setGuestLookupCode("");
-      setValidationError(null);
+      setMemberValidationError(null);
+      setGuestValidationError(null);
+      setExpandedSections(defaultExpandedSections);
     }
   }, [open]);
+
+  const toggleSection = (section: SectionKey) => {
+    setExpandedSections((currentValue) => ({
+      ...currentValue,
+      [section]: !currentValue[section],
+    }));
+  };
+
+  const openSection = (section: SectionKey) => {
+    setExpandedSections((currentValue) => ({
+      ...currentValue,
+      [section]: true,
+    }));
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (name.trim().length === 0) {
-      setValidationError("Name is required.");
+      openSection("member");
+      setMemberValidationError("Name is required.");
       return;
     }
 
-    setValidationError(null);
+    setMemberValidationError(null);
 
     try {
       await onCreateMember({
@@ -96,11 +127,12 @@ export function TeamMembersModal({
     event.preventDefault();
 
     if (guestLookupCode.trim().length === 0) {
-      setValidationError("Guest code is required.");
+      openSection("guest");
+      setGuestValidationError("Guest code is required.");
       return;
     }
 
-    setValidationError(null);
+    setGuestValidationError(null);
 
     try {
       await onLinkGuestMember(guestLookupCode);
@@ -117,26 +149,20 @@ export function TeamMembersModal({
       open={open}
       title="Team members"
     >
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <div className="space-y-4">
-          <form
-            className="rounded-[1.75rem] border border-line/80 bg-slate-50/85 p-4 sm:p-5"
-            onSubmit={handleSubmit}
-          >
-            <div className="flex items-start gap-3">
-              <div className="rounded-2xl bg-white p-3 text-ink shadow-card">
-                <Users className="size-5" />
-              </div>
+      <div className="space-y-3">
+        {error ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        ) : null}
 
-              <div>
-                <h3 className="text-sm font-semibold text-ink">Add team member</h3>
-                <p className="mt-1 text-sm leading-6 text-ink-muted">
-                  Create lightweight collaborators with a name and avatar color.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-4">
+        <AccordionSection
+          onToggle={() => toggleSection("member")}
+          open={expandedSections.member}
+          title="Add team member"
+        >
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(15rem,0.9fr)]">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-ink" htmlFor="team-member-name">
                   Name
@@ -145,132 +171,143 @@ export function TeamMembersModal({
                   className={`${inputClassName} h-12`}
                   disabled={isSaving}
                   id="team-member-name"
-                  onChange={(event) => setName(event.target.value)}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    if (memberValidationError) {
+                      setMemberValidationError(null);
+                    }
+                  }}
                   placeholder="Jordan Lee"
                   type="text"
                   value={name}
                 />
               </div>
 
-              <div className="space-y-2">
-                <span className="text-sm font-medium text-ink">Avatar color</span>
-                <div className="flex flex-wrap gap-2">
-                  {TEAM_MEMBER_COLOR_OPTIONS.map((color) => {
-                    const isSelected = avatarColor === color;
+              <div className="rounded-2xl border border-white/80 bg-slate-50/85 px-4 py-4 shadow-card">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft">
+                  Preview
+                </p>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-ink">
+                      {name.trim() || "New teammate"}
+                    </p>
+                    <p className="mt-1 text-xs text-ink-muted">Live avatar preview</p>
+                  </div>
 
-                    return (
-                      <button
-                        aria-label={`Choose ${color} avatar color`}
-                        className={`flex size-10 items-center justify-center rounded-full border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
-                          isSelected
-                            ? "border-slate-950 shadow-card"
-                            : "border-white bg-white/70 hover:border-slate-300"
-                        }`}
-                        disabled={isSaving}
-                        key={color}
-                        onClick={() => setAvatarColor(color)}
-                        style={{ backgroundColor: color }}
-                        type="button"
-                      >
-                        {isSelected ? (
-                          <span className="text-xs font-semibold text-white">✓</span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
+                  <div
+                    className="flex size-11 items-center justify-center rounded-full text-sm font-semibold text-white shadow-card"
+                    style={{ backgroundColor: avatarColor }}
+                  >
+                    {getInitials(name.trim() || "New teammate")}
+                  </div>
                 </div>
               </div>
-
-              <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white px-4 py-3 shadow-card">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft">
-                    Preview
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-ink">
-                    {name.trim() || "New teammate"}
-                  </p>
-                </div>
-
-                <div
-                  className="flex size-11 items-center justify-center rounded-full text-sm font-semibold text-white shadow-card"
-                  style={{ backgroundColor: avatarColor }}
-                >
-                  {getInitials(name.trim() || "New teammate")}
-                </div>
-              </div>
-
-              {validationError || error ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {validationError ?? error}
-                </div>
-              ) : null}
-
-              <Button disabled={isSaving} type="submit">
-                {isSaving ? "Adding..." : "Add member"}
-              </Button>
             </div>
+
+            <div className="space-y-2">
+              <span className="text-sm font-medium text-ink">Avatar color</span>
+              <div className="flex flex-wrap gap-2">
+                {TEAM_MEMBER_COLOR_OPTIONS.map((color) => {
+                  const isSelected = avatarColor === color;
+
+                  return (
+                    <button
+                      aria-label={`Choose ${color} avatar color`}
+                      className={`flex size-10 items-center justify-center rounded-full border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                        isSelected
+                          ? "border-slate-950 shadow-card"
+                          : "border-white bg-white/70 hover:border-slate-300"
+                      }`}
+                      disabled={isSaving}
+                      key={color}
+                      onClick={() => setAvatarColor(color)}
+                      style={{ backgroundColor: color }}
+                      type="button"
+                    >
+                      {isSelected ? (
+                        <span className="text-xs font-semibold text-white">✓</span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {memberValidationError ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {memberValidationError}
+              </div>
+            ) : null}
+
+            <Button disabled={isSaving} type="submit">
+              {isSaving ? "Adding..." : "Add member"}
+            </Button>
           </form>
+        </AccordionSection>
 
-          <div className="rounded-[1.75rem] border border-line/80 bg-white/80 p-4 sm:p-5">
-            <h3 className="text-sm font-semibold text-ink">Link guest workspace</h3>
-            <p className="mt-1 text-sm leading-6 text-ink-muted">
-              Add another guest by code so tasks assigned to them show up on their board.
+        <AccordionSection
+          onToggle={() => toggleSection("guest")}
+          open={expandedSections.guest}
+          title="Link guest workspace"
+        >
+          <div className="rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft">
+              Your guest code
             </p>
+            <p className="mt-1 text-sm font-semibold text-ink">
+              {guestCode ?? "Starting workspace"}
+            </p>
+          </div>
 
-            <div className="mt-4 rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft">
-                Your guest code
-              </p>
-              <p className="mt-1 text-sm font-semibold text-ink">
-                {guestCode ?? "Starting workspace"}
-              </p>
+          <form className="mt-4 space-y-3" onSubmit={handleLinkGuest}>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-ink" htmlFor="guest-lookup-code">
+                Guest code
+              </label>
+              <input
+                className={`${inputClassName} h-12 uppercase`}
+                disabled={isLinking}
+                id="guest-lookup-code"
+                onChange={(event) => {
+                  setGuestLookupCode(event.target.value.toUpperCase());
+                  if (guestValidationError) {
+                    setGuestValidationError(null);
+                  }
+                }}
+                placeholder="A1B2C3D4"
+                type="text"
+                value={guestLookupCode}
+              />
             </div>
 
-            <form className="mt-4 space-y-3" onSubmit={handleLinkGuest}>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-ink" htmlFor="guest-lookup-code">
-                  Guest code
-                </label>
-                <input
-                  className={`${inputClassName} h-12 uppercase`}
-                  disabled={isLinking}
-                  id="guest-lookup-code"
-                  onChange={(event) => setGuestLookupCode(event.target.value.toUpperCase())}
-                  placeholder="A1B2C3D4"
-                  type="text"
-                  value={guestLookupCode}
-                />
+            {guestValidationError ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {guestValidationError}
               </div>
+            ) : null}
 
-              <Button disabled={isLinking} type="submit" variant="secondary">
-                {isLinking ? "Linking..." : "Add guest teammate"}
-              </Button>
-            </form>
-          </div>
-        </div>
+            <Button disabled={isLinking} type="submit" variant="secondary">
+              {isLinking ? "Linking..." : "Add guest teammate"}
+            </Button>
+          </form>
+        </AccordionSection>
 
-        <div className="rounded-[1.75rem] border border-line/80 bg-white/80 p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold text-ink">Current team</h3>
-              <p className="mt-1 text-sm leading-6 text-ink-muted">
-                {members.length === 0
-                  ? "No collaborators yet."
-                  : `${members.length} member${members.length === 1 ? "" : "s"} available for assignment.`}
-              </p>
-            </div>
-          </div>
-
+        <AccordionSection
+          onToggle={() => toggleSection("team")}
+          open={expandedSections.team}
+          title="Current team"
+        >
           {isLoading ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-5 text-sm text-ink-muted">
+            <div className="rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-5 text-sm text-ink-muted">
               Loading team members...
             </div>
           ) : members.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-5 text-sm text-ink-muted">
+            <div className="rounded-2xl border border-dashed border-line bg-slate-50 px-4 py-5 text-sm text-ink-muted">
               Add two or three people here so tasks can show ownership clearly on the board.
             </div>
           ) : (
-            <div className="mt-4 space-y-2">
+            <div className="space-y-2">
               {members.map((member) => (
                 <div
                   className="flex items-center justify-between gap-3 rounded-2xl border border-line/80 bg-slate-50/75 px-3 py-3"
@@ -308,8 +345,73 @@ export function TeamMembersModal({
               ))}
             </div>
           )}
-        </div>
+        </AccordionSection>
       </div>
     </Modal>
+  );
+}
+
+interface AccordionSectionProps extends PropsWithChildren {
+  onToggle: () => void;
+  open: boolean;
+  title: string;
+}
+
+function AccordionSection({
+  children,
+  onToggle,
+  open,
+  title,
+}: AccordionSectionProps) {
+  return (
+    <section
+      className={cn(
+        "rounded-[1.6rem] border border-line/80 bg-white/80 shadow-card transition-all duration-300",
+        open ? "border-slate-200 bg-white/90" : "hover:bg-white/90",
+      )}
+    >
+      <button
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left sm:px-5"
+        onClick={onToggle}
+        type="button"
+      >
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-ink">{title}</h3>
+        </div>
+
+        <div
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-full border border-line/80 bg-slate-50/90 text-ink-muted shadow-card transition-all duration-300",
+            open ? "bg-white text-ink shadow-sm" : "",
+          )}
+        >
+          <ChevronRight
+            className={cn(
+              "size-4 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              open ? "rotate-90" : "rotate-0",
+            )}
+          />
+        </div>
+      </button>
+
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div className="overflow-hidden">
+          <div
+            className={cn(
+              "border-t border-line/70 px-4 pb-4 pt-4 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:px-5 sm:pb-5",
+              open ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0",
+            )}
+          >
+            {children}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }

@@ -11,11 +11,16 @@ const badgeVariants = cva(
     },
     variants: {
       tone: {
-        accent: "bg-blue-100 text-blue-700",
-        danger: "bg-rose-100 text-rose-700",
-        neutral: "bg-slate-100 text-slate-600",
-        success: "bg-emerald-100 text-emerald-700",
-        warning: "bg-amber-100 text-amber-700",
+        accent:
+          "bg-[var(--color-badge-accent-bg)] text-[color:var(--color-badge-accent-ink)]",
+        danger:
+          "bg-[var(--color-badge-danger-bg)] text-[color:var(--color-badge-danger-ink)]",
+        neutral:
+          "bg-[var(--color-badge-neutral-bg)] text-[color:var(--color-badge-neutral-ink)]",
+        success:
+          "bg-[var(--color-badge-success-bg)] text-[color:var(--color-badge-success-ink)]",
+        warning:
+          "bg-[var(--color-badge-warning-bg)] text-[color:var(--color-badge-warning-ink)]",
       },
     },
   },

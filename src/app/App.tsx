@@ -5,11 +5,14 @@ import { WorkspaceRail } from "@/components/layout/WorkspaceRail";
 import { TeamMembersModal } from "@/components/team/TeamMembersModal";
 import { TaskModal } from "@/components/tasks/TaskModal";
 import { useGuestSession } from "@/hooks/useGuestSession";
+import { useLabels } from "@/hooks/useLabels";
 import { useTasks } from "@/hooks/useTasks";
+import { useThemePreference } from "@/hooks/useThemePreference";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
-import { getGuestCode } from "@/lib/utils";
+import { filterTasks, getGuestCode } from "@/lib/utils";
 import type {
   AssigneeFilter,
+  Task,
   TaskFormValues,
   TaskMutationRequest,
   TaskPriorityFilter,
@@ -25,6 +28,7 @@ function toTaskMutationInput(values: TaskFormValues): TaskMutationRequest {
     assigneeIds: values.assigneeIds,
     description: values.description.trim() || null,
     due_date: values.dueDate || null,
+    labelIds: values.labelIds,
     priority: values.priority,
     status: values.status,
     title: values.title.trim(),
@@ -32,26 +36,62 @@ function toTaskMutationInput(values: TaskFormValues): TaskMutationRequest {
 }
 
 export function App() {
+  const { setTheme, theme } = useThemePreference();
   const guestSession = useGuestSession();
   const tasks = useTasks(guestSession.user?.id);
+  const labels = useLabels(guestSession.user?.id);
   const teamMembers = useTeamMembers(guestSession.user?.id);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [priority, setPriority] = useState<TaskPriorityFilter>("all");
   const [assigneeId, setAssigneeId] = useState<AssigneeFilter>("all");
+  const [labelId, setLabelId] = useState<string | "all">("all");
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [taskSelectionFallback, setTaskSelectionFallback] = useState<Task | null>(null);
   const [taskModalState, setTaskModalState] = useState<TaskModalState>({
     mode: "create",
     open: false,
   });
+  const boardFilters = useMemo(
+    () => ({
+      assigneeId,
+      labelId,
+      priority,
+      searchQuery,
+    }),
+    [assigneeId, labelId, priority, searchQuery],
+  );
+  const visibleTaskCount = useMemo(
+    () => filterTasks(tasks.tasks, boardFilters).length,
+    [boardFilters, tasks.tasks],
+  );
+  const hasActiveFilters =
+    boardFilters.searchQuery.trim().length > 0 ||
+    boardFilters.priority !== "all" ||
+    boardFilters.assigneeId !== "all" ||
+    boardFilters.labelId !== "all";
 
   const selectedTask = useMemo(() => {
     if (!taskModalState.open || taskModalState.mode !== "edit") {
       return null;
     }
 
-    return tasks.tasks.find((task) => task.id === taskModalState.taskId) ?? null;
-  }, [taskModalState, tasks.tasks]);
+    return (
+      tasks.tasks.find((task) => task.id === taskModalState.taskId) ??
+      (taskSelectionFallback?.id === taskModalState.taskId
+        ? taskSelectionFallback
+        : null)
+    );
+  }, [taskModalState, taskSelectionFallback, tasks.tasks]);
+
+  useEffect(() => {
+    if (
+      taskSelectionFallback &&
+      tasks.tasks.some((task) => task.id === taskSelectionFallback.id)
+    ) {
+      setTaskSelectionFallback(null);
+    }
+  }, [taskSelectionFallback, tasks.tasks]);
 
   useEffect(() => {
     if (taskModalState.open && taskModalState.mode === "edit" && !selectedTask) {
@@ -71,21 +111,26 @@ export function App() {
     }
   }, [assigneeId, teamMembers.members]);
 
+  useEffect(() => {
+    if (labelId !== "all" && labels.labels.every((label) => label.id !== labelId)) {
+      setLabelId("all");
+    }
+  }, [labelId, labels.labels]);
+
   const handleRetry = () => {
     guestSession.retry();
+    void labels.refetch();
     void tasks.refetch();
     void teamMembers.refetch();
   };
 
   const handleCreateTask = async (values: TaskFormValues) => {
-    await tasks.createTask({
-      ...toTaskMutationInput(values),
-      status: "todo",
-    });
-
+    const nextTask = await tasks.createTask(toTaskMutationInput(values));
+    setTaskSelectionFallback(nextTask);
     setTaskModalState({
-      mode: "create",
-      open: false,
+      mode: "edit",
+      open: true,
+      taskId: nextTask.id,
     });
   };
 
@@ -95,11 +140,6 @@ export function App() {
     }
 
     await tasks.updateTask(selectedTask.id, toTaskMutationInput(values));
-
-    setTaskModalState({
-      mode: "create",
-      open: false,
-    });
   };
 
   const handleDeleteTask = async () => {
@@ -108,6 +148,7 @@ export function App() {
     }
 
     await tasks.deleteTask(selectedTask.id);
+    setTaskSelectionFallback(null);
 
     setTaskModalState({
       mode: "create",
@@ -135,41 +176,50 @@ export function App() {
     setSearchQuery("");
     setPriority("all");
     setAssigneeId("all");
+    setLabelId("all");
+  };
+
+  const openTeamManager = () => {
+    teamMembers.clearMutationError();
+    setIsTeamModalOpen(true);
   };
 
   return (
     <>
       <div className="relative isolate min-h-screen overflow-hidden bg-canvas text-ink">
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.10)_1px,transparent_1px)] [background-size:28px_28px]" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_26%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.07),_transparent_22%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(var(--page-grid-line)_1px,transparent_1px),linear-gradient(90deg,var(--page-grid-line)_1px,transparent_1px)] [background-size:28px_28px]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,var(--page-glow-a),transparent_26%),radial-gradient(circle_at_bottom_right,var(--page-glow-b),transparent_22%)]" />
 
         <div className="relative mx-auto flex min-h-screen w-full max-w-[1720px] flex-col gap-3 p-3 sm:gap-4 sm:p-4 lg:flex-row">
-          <WorkspaceRail guestUserId={guestSession.user?.id ?? null} />
+          <WorkspaceRail
+            guestUserId={guestSession.user?.id ?? null}
+            hasActiveFilters={hasActiveFilters}
+            onManageTeam={openTeamManager}
+            onThemeChange={setTheme}
+            tasks={tasks.tasks}
+            theme={theme}
+            visibleTaskCount={visibleTaskCount}
+          />
 
-          <main className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/60 shadow-shell backdrop-blur-xl lg:min-h-[calc(100vh-2rem)]">
+          <main className="relative z-0 flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.75rem] border border-line bg-surface shadow-shell backdrop-blur-xl lg:min-h-[calc(100vh-2rem)]">
             <Board
-              filters={{
-                assigneeId,
-                priority,
-                searchQuery,
-              }}
-              guestUserId={guestSession.user?.id ?? null}
+              filters={boardFilters}
               isLoading={guestSession.isLoading || tasks.isLoading}
+              labels={labels.labels}
               members={teamMembers.members}
               mutationError={taskModalState.open ? null : tasks.mutationError}
               onAssigneeChange={setAssigneeId}
               onCreateTask={() => {
                 tasks.clearMutationError();
+                labels.clearMutationError();
+                setTaskSelectionFallback(null);
                 setTaskModalState({
                   mode: "create",
                   open: true,
                 });
               }}
               onDismissMutationError={tasks.clearMutationError}
-              onManageTeam={() => {
-                teamMembers.clearMutationError();
-                setIsTeamModalOpen(true);
-              }}
+              onLabelChange={setLabelId}
               onPriorityChange={setPriority}
               onResetFilters={handleResetFilters}
               onRetry={handleRetry}
@@ -177,6 +227,8 @@ export function App() {
               onTaskMove={tasks.moveTask}
               onTaskSelect={(taskId) => {
                 tasks.clearMutationError();
+                labels.clearMutationError();
+                setTaskSelectionFallback(null);
                 setTaskModalState({
                   mode: "edit",
                   open: true,
@@ -186,7 +238,6 @@ export function App() {
               sessionError={guestSession.error}
               tasks={tasks.tasks}
               taskError={tasks.error}
-              teamCount={teamMembers.ownedMembers.length}
             />
           </main>
         </div>
@@ -194,31 +245,44 @@ export function App() {
 
       <TaskModal
         error={tasks.mutationError}
+        currentUserId={guestSession.user?.id ?? null}
         isDeleting={tasks.isDeleting}
+        isCreatingLabel={labels.isCreating}
         isSaving={tasks.isCreating || tasks.isUpdating}
         canManageAssignees={
           taskModalState.mode !== "edit" ||
           selectedTask?.user_id === guestSession.user?.id
         }
+        canManageLabels={
+          taskModalState.mode !== "edit" ||
+          selectedTask?.user_id === guestSession.user?.id
+        }
+        labelError={labels.mutationError}
+        labels={
+          taskModalState.mode === "edit" &&
+          selectedTask?.user_id !== guestSession.user?.id
+            ? selectedTask?.labels ?? []
+            : labels.ownedLabels
+        }
         members={teamMembers.ownedMembers}
         mode={taskModalState.mode === "edit" ? "edit" : "create"}
         onClose={() => {
           tasks.clearMutationError();
+          labels.clearMutationError();
+          setTaskSelectionFallback(null);
           setTaskModalState({
             mode: "create",
             open: false,
           });
         }}
+        onCreateLabel={labels.createLabel}
         onDelete={
           taskModalState.mode === "edit" &&
           selectedTask?.user_id === guestSession.user?.id
             ? handleDeleteTask
             : undefined
         }
-        onManageTeam={() => {
-          teamMembers.clearMutationError();
-          setIsTeamModalOpen(true);
-        }}
+        onManageTeam={openTeamManager}
         onSubmit={
           taskModalState.mode === "edit" ? handleUpdateTask : handleCreateTask
         }

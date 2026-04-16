@@ -57,6 +57,27 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
   return fallbackMessage;
 }
 
+async function requireAuthenticatedUserId() {
+  if (!supabase) {
+    throw new Error(SUPABASE_ENV_ERROR);
+  }
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!user) {
+    throw new Error("Guest workspace is still starting. Refresh and try again.");
+  }
+
+  return user.id;
+}
+
 export function useTeamMembers(userId: string | null | undefined) {
   const [state, setState] = useState<UseTeamMembersState>({
     deletingMemberId: null,
@@ -158,15 +179,6 @@ export function useTeamMembers(userId: string | null | undefined) {
   const createMember = async (
     input: Pick<TeamMemberDraft, "avatar_color" | "name">,
   ) => {
-    if (!userId) {
-      const message = "Guest workspace is still starting. Try again in a moment.";
-      setState((currentState) => ({
-        ...currentState,
-        mutationError: message,
-      }));
-      throw new Error(message);
-    }
-
     if (!supabase) {
       setState((currentState) => ({
         ...currentState,
@@ -183,12 +195,14 @@ export function useTeamMembers(userId: string | null | undefined) {
     }));
 
     try {
+      const authenticatedUserId = await requireAuthenticatedUserId();
+
       const { data, error } = await client
         .from("team_members")
         .insert({
           ...input,
           name: input.name.trim(),
-          user_id: userId,
+          user_id: authenticatedUserId,
         })
         .select("*")
         .single();
@@ -221,15 +235,6 @@ export function useTeamMembers(userId: string | null | undefined) {
   };
 
   const linkGuestMember = async (guestCode: string) => {
-    if (!userId) {
-      const message = "Guest workspace is still starting. Try again in a moment.";
-      setState((currentState) => ({
-        ...currentState,
-        mutationError: message,
-      }));
-      throw new Error(message);
-    }
-
     if (!supabase) {
       setState((currentState) => ({
         ...currentState,
@@ -257,6 +262,8 @@ export function useTeamMembers(userId: string | null | undefined) {
     }));
 
     try {
+      const authenticatedUserId = await requireAuthenticatedUserId();
+
       const { data, error } = await client.rpc("find_workspace_profile", {
         lookup_guest_code: normalizedGuestCode,
       });
@@ -271,7 +278,7 @@ export function useTeamMembers(userId: string | null | undefined) {
         throw new Error("No guest workspace matches that code yet.");
       }
 
-      if (profile.user_id === userId) {
+      if (profile.user_id === authenticatedUserId) {
         throw new Error("You cannot add your own guest workspace as a linked teammate.");
       }
 
@@ -289,7 +296,7 @@ export function useTeamMembers(userId: string | null | undefined) {
           avatar_color: profile.avatar_color,
           linked_user_id: profile.user_id,
           name: `Guest ${profile.guest_code}`,
-          user_id: userId,
+          user_id: authenticatedUserId,
         })
         .select("*")
         .single();
