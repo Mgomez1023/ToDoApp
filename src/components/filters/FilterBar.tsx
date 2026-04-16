@@ -34,7 +34,7 @@ export function FilterBar({
   const assigneeSelectDisabled = members.length === 0;
   const labelSelectDisabled = labels.length === 0;
   const selectClassName =
-    "h-10 min-w-0 rounded-xl border border-line/80 bg-slate-50/85 px-3 text-sm text-ink shadow-card outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-ink-soft sm:min-w-[156px]";
+    "h-10 min-w-0 rounded-xl border border-line/80 bg-slate-50/85 px-3 text-base text-ink shadow-card outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-ink-soft sm:min-w-[156px] sm:text-sm";
 
   return (
     <div className="flex flex-wrap items-start gap-2">

@@ -30,7 +30,7 @@ interface TeamMembersModalProps {
 }
 
 const inputClassName =
-  "w-full rounded-2xl border border-line bg-slate-50 px-4 text-sm text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full rounded-2xl border border-line bg-slate-50 px-4 text-base text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm";
 const defaultExpandedSections = {
   guest: false,
   member: false,

@@ -27,7 +27,7 @@ export function SearchBar({
       <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-soft transition group-focus-within:text-ink" />
       <input
         id="task-search"
-        className="h-10 w-full rounded-xl border border-line/80 bg-slate-50/85 pl-10 pr-10 text-sm text-ink shadow-card outline-none transition placeholder:text-ink-soft focus:border-accent focus:ring-4 focus:ring-blue-100"
+        className="h-10 w-full rounded-xl border border-line/80 bg-slate-50/85 pl-10 pr-10 text-base text-ink shadow-card outline-none transition placeholder:text-ink-soft focus:border-accent focus:ring-4 focus:ring-blue-100 sm:text-sm"
         onChange={(event) => onChange(event.target.value)}
         placeholder="Search task titles"
         ref={inputRef}

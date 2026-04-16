@@ -75,7 +75,7 @@ export function CommentsSection({
             Add comment
           </label>
           <textarea
-            className="min-h-24 w-full rounded-2xl border border-line bg-slate-50 px-4 py-3 text-sm text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100"
+            className="min-h-24 w-full rounded-2xl border border-line bg-slate-50 px-4 py-3 text-base text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100 sm:text-sm"
             disabled={isCommenting}
             id="task-comment-body"
             onChange={(event) => setBody(event.target.value)}

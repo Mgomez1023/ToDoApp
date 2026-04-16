@@ -243,7 +243,7 @@ export function LabelPicker({
               Label name
             </label>
             <input
-              className="h-11 w-full rounded-xl border border-line bg-slate-50 px-3 text-sm text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100"
+              className="h-11 w-full rounded-xl border border-line bg-slate-50 px-3 text-base text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100 sm:text-sm"
               disabled={disabled || isCreatingLabel}
               onChange={(event) => setNewLabelName(event.target.value)}
               placeholder="Bug"
