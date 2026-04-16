@@ -466,9 +466,9 @@ export function TaskDetailSheet({
                 </h2>
 
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink-muted">
-                  <div className="flex items-center gap-1.5">
-                    <CalendarDays className="size-3.5" />
-                    <span>
+                  <div className="flex max-w-full min-w-0 items-center gap-1.5">
+                    <CalendarDays className="size-3.5 shrink-0" />
+                    <span className="truncate">
                       {dueDate
                         ? `${dueDate.shortLabel} · ${dueDate.formattedDate}`
                         : "No due date yet"}

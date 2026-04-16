@@ -79,22 +79,22 @@ export const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function Ta
           accentLabel ? "border-t-[color:var(--task-card-divider)]" : "border-line/70",
         )}
       >
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           {dueDate ? (
             <div
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                "inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-semibold sm:px-2.5 sm:text-[11px]",
                 dueDate.tone === "overdue" &&
-                  "border-rose-200 bg-rose-50 text-rose-700",
+                  "border border-rose-200 bg-rose-50 text-rose-700",
                 dueDate.tone === "today" &&
-                  "border-blue-200 bg-blue-50 text-blue-700",
+                  "border border-blue-200 bg-blue-50 text-blue-700",
                 dueDate.tone === "soon" &&
-                  "border-amber-200 bg-amber-50 text-amber-700",
+                  "border border-amber-200 bg-amber-50 text-amber-700",
                 dueDate.tone === "normal" &&
-                  "border-line/80 bg-slate-50 text-ink-muted",
+                  "border border-line/80 bg-slate-50 text-ink-muted",
               )}
             >
-              <CalendarDays className="size-3.5" />
+              <CalendarDays className="size-3 shrink-0 sm:size-3.5" />
               <span className="truncate">
                 {dueDate.tone === "normal"
                   ? dueDate.formattedDate

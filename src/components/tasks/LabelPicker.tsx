@@ -14,7 +14,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, GripVertical, Plus, Tag } from "lucide-react";
+import { GripVertical, Plus, Tag } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import { TaskLabels } from "@/components/tasks/TaskLabels";
@@ -146,7 +146,7 @@ export function LabelPicker({
         <div>
           <label className="text-sm font-medium text-ink">Labels</label>
           <p className="mt-1 text-xs leading-5 text-ink-muted">
-            Labels will be 
+            Labels will be saved across tasks. The leftmost tag will determine the color of the task.
           </p>
         </div>
 
@@ -243,7 +243,7 @@ export function LabelPicker({
               Label name
             </label>
             <input
-              className="h-11 w-full rounded-xl border border-line bg-slate-50 px-3 text-base text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100 sm:text-sm"
+              className="h-11 w-full rounded-xl border border-line bg-slate-50 px-3 text-sm text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-blue-100"
               disabled={disabled || isCreatingLabel}
               onChange={(event) => setNewLabelName(event.target.value)}
               placeholder="Bug"
@@ -264,21 +264,15 @@ export function LabelPicker({
                   <button
                     aria-label={`Use ${color} for the label`}
                     className={cn(
-                      "flex size-8 items-center justify-center rounded-full border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                      isSelected
-                        ? "scale-110 border-white shadow-card ring-2 ring-ink/20 ring-offset-2 ring-offset-canvas"
-                        : "border-white/80 hover:scale-105",
+                      "size-8 rounded-full border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                      isSelected ? "scale-105 border-slate-900" : "border-white",
                     )}
                     disabled={disabled || isCreatingLabel}
                     key={color}
                     onClick={() => setNewLabelColor(color)}
                     style={{ backgroundColor: color }}
                     type="button"
-                  >
-                    {isSelected ? (
-                      <Check className="size-3.5 text-white drop-shadow-[0_1px_2px_rgba(15,23,42,0.45)]" />
-                    ) : null}
-                  </button>
+                  />
                 );
               })}
             </div>
