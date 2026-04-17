@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Board } from "@/components/board/Board";
+import { AboutModal } from "@/components/layout/AboutModal";
 import { WorkspaceRail } from "@/components/layout/WorkspaceRail";
 import { TeamMembersModal } from "@/components/team/TeamMembersModal";
 import { TaskModal } from "@/components/tasks/TaskModal";
@@ -46,6 +47,7 @@ export function App() {
   const [priority, setPriority] = useState<TaskPriorityFilter>("all");
   const [assigneeId, setAssigneeId] = useState<AssigneeFilter>("all");
   const [labelId, setLabelId] = useState<string | "all">("all");
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [taskSelectionFallback, setTaskSelectionFallback] = useState<Task | null>(null);
   const [taskModalState, setTaskModalState] = useState<TaskModalState>({
@@ -194,6 +196,7 @@ export function App() {
           <WorkspaceRail
             guestUserId={guestSession.user?.id ?? null}
             hasActiveFilters={hasActiveFilters}
+            onOpenAbout={() => setIsAboutModalOpen(true)}
             onManageTeam={openTeamManager}
             onThemeChange={setTheme}
             tasks={tasks.tasks}
@@ -308,6 +311,11 @@ export function App() {
         onDeleteMember={handleDeleteMember}
         onLinkGuestMember={handleLinkGuestMember}
         open={isTeamModalOpen}
+      />
+
+      <AboutModal
+        onClose={() => setIsAboutModalOpen(false)}
+        open={isAboutModalOpen}
       />
     </>
   );

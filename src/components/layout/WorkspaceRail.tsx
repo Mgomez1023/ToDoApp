@@ -21,6 +21,7 @@ const RAIL_PANEL_EXIT_DURATION_MS = 220;
 interface WorkspaceRailProps {
   guestUserId: string | null;
   hasActiveFilters: boolean;
+  onOpenAbout: () => void;
   onManageTeam: () => void;
   onThemeChange: (theme: ThemeMode) => void;
   tasks: Task[];
@@ -40,19 +41,10 @@ const primaryNav: Array<{
   },
 ];
 
-const utilityNav: Array<{
-  icon: LucideIcon;
-  label: string;
-}> = [
-  {
-    icon: HelpCircle,
-    label: "Help",
-  },
-];
-
 export function WorkspaceRail({
   guestUserId,
   hasActiveFilters,
+  onOpenAbout,
   onManageTeam,
   onThemeChange,
   tasks,
@@ -96,6 +88,12 @@ export function WorkspaceRail({
               onThemeChange={onThemeChange}
               theme={theme}
             />
+            <RailButton
+              compact
+              icon={HelpCircle}
+              label="About"
+              onClick={onOpenAbout}
+            />
           </nav>
         </div>
       </div>
@@ -124,9 +122,11 @@ export function WorkspaceRail({
                 onThemeChange={onThemeChange}
                 theme={theme}
               />
-              {utilityNav.map((item) => (
-                <RailIcon key={item.label} {...item} />
-              ))}
+              <RailButton
+                icon={HelpCircle}
+                label="About"
+                onClick={onOpenAbout}
+              />
             </div>
           </div>
         </div>
@@ -459,6 +459,7 @@ function ThemeSettingsPanel({
     </div>
   );
 }
+
 
 function getRailIconClassName({
   active,
